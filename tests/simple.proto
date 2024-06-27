@@ -1,9 +1,15 @@
 syntax = "proto3";
 
+// TODO: Support putting OtherMessage below SimpleMessage
+message OtherMessage {
+  int32 other_num = 1;
+}
+
 message SimpleMessage {
   int32 num = 1;
   string str = 2;
   SimpleEnum enum_value = 3;
+  OtherMessage other = 4;
 }
 
 enum SimpleEnum {

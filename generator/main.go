@@ -196,8 +196,15 @@ func addMessageField(f *descriptor.FieldDescriptorProto, cpp_type string, pub_ou
 	    return *{{.pri_name}};
 	}
 
-	void set_{{.f_name}}(const {{.cpp_type}}& value) {
-	    *{{.pri_name}} = value;
+	{{.cpp_type}}* mutable_{{.f_name}}() {
+	    if (!{{.pri_name}}) {
+			{{.pri_name}} = std::make_unique<{{.cpp_type}}>();
+        }
+	    return {{.pri_name}}.get();
+	}
+
+	bool has_{{.f_name}}() const {
+	    return (bool){{.pri_name}};
 	}
 
 	void clear_{{.f_name}}() {
