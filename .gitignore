@@ -1,0 +1,7 @@
+bazel-bin
+bazel-decaproto
+bazel-out
+bazel-testlogs
+
+protoc-gen-deca_cpp
+*.pb.h
