@@ -36,16 +36,20 @@ func addPrimitiveField(f *descriptor.FieldDescriptorProto, cpp_type string, pub_
  `
 
 	const pub_template = `
-	{{.cpp_type}} {{.f_name}}() const {
+	inline {{.cpp_type}} {{.f_name}}() const {
 	    return {{.pri_name}};
 	}
 
-	void set_{{.f_name}}( {{.cpp_type}} value) {
+	inline void set_{{.f_name}}( {{.cpp_type}} value) {
 	    {{.pri_name}} = value;
 	    has_{{.pri_name}} = true;
 	}
 
-	void clear_{{.f_name}}() {
+	inline bool has_{{.f_name}}() const {
+	    return has_{{.pri_name}};
+	}
+
+	inline void clear_{{.f_name}}() {
 	    // TODO: Support default value
 	    {{.pri_name}} = {{.cpp_type}}();
 	    has_{{.pri_name}} = false;
@@ -87,17 +91,21 @@ func addStringField(f *descriptor.FieldDescriptorProto, cpp_type string, pub_out
  `
 
 	const pub_template = `
-	{{.cpp_type}} {{.f_name}}() const {
+	inline {{.cpp_type}} {{.f_name}}() const {
 	    return {{.pri_name}};
 	}
 
 	// TODO: Support string_view
-	void set_{{.f_name}}(const {{.cpp_type}}& value) {
+	inline void set_{{.f_name}}(const {{.cpp_type}}& value) {
 	    {{.pri_name}} = value;
 	    has_{{.pri_name}} = true;
 	}
 
-	void clear_{{.f_name}}() {
+	inline bool has_{{.f_name}}() const {
+	    return has_{{.pri_name}};
+	}
+
+	inline void clear_{{.f_name}}() {
 	    // TODO: Support default value
 	    {{.pri_name}} = {{.cpp_type}}();
 	    has_{{.pri_name}} = false;
@@ -137,15 +145,15 @@ func addRepeatedPrimitiveField(f *descriptor.FieldDescriptorProto, cpp_type stri
 
  `
 	const pub_template = `
-	const std::vector<{{.cpp_type}}>& get_{{.f_name}}() const {
+	inline const std::vector<{{.cpp_type}}>& get_{{.f_name}}() const {
 	    return {{.pri_name}};
 	}
 
-	std::vector<{{.cpp_type}}>* mutable_{{.f_name}}( {{.cpp_type}} value) {
+	inline std::vector<{{.cpp_type}}>* mutable_{{.f_name}}( {{.cpp_type}} value) {
 		return &{{.pri_name}};
 	}
 
-	void clear_{{.f_name}}() {
+	inline void clear_{{.f_name}}() {
 	    {{.pri_name}}.clear();
 	}
 

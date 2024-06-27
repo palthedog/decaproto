@@ -3,4 +3,12 @@ syntax = "proto3";
 message SimpleMessage {
   int32 num = 1;
   string str = 2;
+  SimpleEnum enum_value = 3;
+}
+
+enum SimpleEnum {
+  UNKNOWN = 0;
+  ENUM_A = 1;
+  ENUM_B = 2;
+  ENUM_C = 3;
 }
