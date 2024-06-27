@@ -1,0 +1,12 @@
+syntax = "proto3";
+
+message OtherMessage {
+  int32 num = 1;
+}
+
+message SimpleMessage {
+  int32 number = 1;
+  string str = 2;
+  repeated string strs = 3;
+}
+
