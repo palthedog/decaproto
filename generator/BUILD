@@ -1,6 +1,5 @@
 load("@rules_proto_grpc//:defs.bzl", "proto_plugin")
 load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
-load("//generator:decaproto.bzl", "deca_proto_library", "deca_proto_compile")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -40,13 +39,4 @@ proto_plugin(
     name = "decaproto_plugin",
     output_directory = True,
     tool = "//generator:decaproto",
-)
-
-deca_proto_library(
-    name = "simple_deca_proto",
-    protos = [":simple_proto"])
-
-proto_library(
-    name = "simple_proto",
-    srcs = glob(["simple.proto"]),
 )
