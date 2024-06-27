@@ -145,11 +145,11 @@ func addRepeatedPrimitiveField(f *descriptor.FieldDescriptorProto, cpp_type stri
 
  `
 	const pub_template = `
-	inline const std::vector<{{.cpp_type}}>& get_{{.f_name}}() const {
+	inline const std::vector<{{.cpp_type}}>& {{.f_name}}() const {
 	    return {{.pri_name}};
 	}
 
-	inline std::vector<{{.cpp_type}}>* mutable_{{.f_name}}( {{.cpp_type}} value) {
+	inline std::vector<{{.cpp_type}}>* mutable_{{.f_name}}() {
 		return &{{.pri_name}};
 	}
 
@@ -280,6 +280,11 @@ func processField(f *descriptor.FieldDescriptorProto) (string, string) {
 		} else if f.GetType() == descriptor.FieldDescriptorProto_TYPE_STRING {
 			// string
 			addRepeatedPrimitiveField(f, cpp_name, &pub, &pri)
+		} else if f.GetType() == descriptor.FieldDescriptorProto_TYPE_ENUM {
+			// enum
+			addRepeatedPrimitiveField(f, cpp_name, &pub, &pri)
+		} else {
+			log.Fatal("Unsupported repeated field type", f.GetType(), f.GetName())
 		}
 	} else if f.GetLabel() == descriptor.FieldDescriptorProto_LABEL_OPTIONAL {
 		// optional
@@ -289,14 +294,15 @@ func processField(f *descriptor.FieldDescriptorProto) (string, string) {
 		} else if f.GetType() == descriptor.FieldDescriptorProto_TYPE_STRING {
 			// string
 			addStringField(f, cpp_name, &pub, &pri)
-		} else if f.GetType() == descriptor.FieldDescriptorProto_TYPE_MESSAGE {
-			// message
-			addMessageField(f, cpp_name, &pub, &pri)
 		} else if f.GetType() == descriptor.FieldDescriptorProto_TYPE_ENUM {
 			// enum
 			addPrimitiveField(f, cpp_name, &pub, &pri)
+		} else if f.GetType() == descriptor.FieldDescriptorProto_TYPE_MESSAGE {
+			// message
+			addMessageField(f, cpp_name, &pub, &pri)
+		} else {
+			log.Fatal("Unsupported field type", f.GetType(), f.GetName())
 		}
-
 	} else {
 		log.Fatal("Unsupported field label", f.GetLabel(), f.GetName())
 	}

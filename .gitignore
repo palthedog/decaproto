@@ -3,5 +3,7 @@ bazel-decaproto
 bazel-out
 bazel-testlogs
 
+tmp/
+
 protoc-gen-deca_cpp
 *.pb.h
