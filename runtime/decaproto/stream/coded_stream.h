@@ -7,10 +7,6 @@ namespace decaproto {
 
 // https://protobuf.dev/programming-guides/encoding/
 /*
-
-/*
-https://protobuf.dev/programming-guides/encoding/
-
 message    := (tag value)*
 
 tag        := (field << 3) bit-or wire_type;

@@ -15,10 +15,9 @@ Reflection* kTestReflection = nullptr;
 
 class TestReflection;
 
+const int kNumTag = 0;
+const int kStrTag = 1;
 class ReflectionTestMessage : public Message {
-    const int kNumTag = 0;
-    const int kStrTag = 0;
-
     uint32_t num_;  // uint32 num = 0
     string str_;    // string str = 1
 
@@ -71,7 +70,7 @@ public:
 
         EXPECT_EQ(kUint32, field->GetType());
 
-        if (field->GetTag() == KNumTag) {
+        if (field->GetTag() == kNumTag) {
             message->set_num(value);
         } else {
             FAIL() << "Invalid field tag" << field->GetTag();
