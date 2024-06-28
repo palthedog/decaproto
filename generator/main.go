@@ -328,8 +328,8 @@ func processEnum(ctx *Context, m *descriptor.EnumDescriptorProto) {
 
 	ctx.popPackage()
 
-	ctx.printer.prototype_declarations += "enum " + full_name + ";\n"
-	ctx.printer.definitions += out
+	//ctx.printer.prototype_declarations += "enum " + full_name + ";\n"
+	ctx.printer.enum_definitions += out
 }
 
 func processMessage(ctx *Context, m *descriptor.DescriptorProto) {
@@ -438,13 +438,17 @@ type FilePrinter struct {
 	includes map[string]struct{}
 
 	prototype_declarations string
-	definitions            string
+
+	enum_definitions string
+
+	definitions string
 }
 
 func NewFilePrinter() *FilePrinter {
 	return &FilePrinter{
 		includes:               map[string]struct{}{},
 		prototype_declarations: "",
+		enum_definitions:       "",
 		definitions:            "",
 	}
 }
@@ -455,16 +459,23 @@ func (fp *FilePrinter) addInclude(inc string) {
 
 func (fp *FilePrinter) printIncludes() string {
 	keys := maps.Keys(fp.includes)
-	return strings.Join(keys, "\n")
+	return strings.Join(keys, "\n") + "\n"
 }
 
 func (fp *FilePrinter) printFile() string {
 	var content string = ""
 
 	content += fp.printIncludes()
+	content += "\n"
 
 	content += fp.prototype_declarations
+	content += "\n"
+
+	content += fp.enum_definitions
+	content += "\n"
+
 	content += fp.definitions
+	content += "\n"
 
 	return content
 }
