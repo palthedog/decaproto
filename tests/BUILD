@@ -21,7 +21,7 @@ cc_test(
     srcs = ["simple_test.cc"],
     deps = [
         ":test_deca_proto",
-        "@com_google_googletest//:gtest_main",
+        "@googletest//:gtest_main",
     ],
 )
 
@@ -31,7 +31,7 @@ cc_test(
     srcs = ["repeated_test.cc"],
     deps = [
         ":test_deca_proto",
-        "@com_google_googletest//:gtest_main",
+        "@googletest//:gtest_main",
     ],
 )
 
@@ -41,7 +41,7 @@ cc_test(
     srcs = ["def_order_test.cc"],
     deps = [
         ":test_deca_proto",
-        "@com_google_googletest//:gtest_main",
+        "@googletest//:gtest_main",
     ],
 )
 
