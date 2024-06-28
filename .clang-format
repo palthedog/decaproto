@@ -1,0 +1,13 @@
+# Based on Google C/C++ Code Style settings
+
+Language: Cpp
+BasedOnStyle: Google
+IndentWidth: 4
+AccessModifierOffset: -4
+
+AllowShortFunctionsOnASingleLine: false
+AlignAfterOpenBracket: AlwaysBreak
+
+AllowAllArgumentsOnNextLine: true
+BinPackArguments: false
+BinPackParameters: false

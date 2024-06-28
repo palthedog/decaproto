@@ -1,0 +1,9 @@
+cc_test(
+    name = "coded_stream_test",
+    size = "small",
+    srcs = ["coded_stream_test.cc"],
+    deps = [
+        "//runtime/decaproto/stream:stream",
+        "@com_google_googletest//:gtest_main",
+    ],
+)
