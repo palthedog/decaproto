@@ -9,6 +9,8 @@ import (
 	"strings"
 	"text/template"
 
+	"golang.org/x/exp/maps"
+
 	descriptor "github.com/golang/protobuf/protoc-gen-go/descriptor"
 	plugin "github.com/golang/protobuf/protoc-gen-go/plugin"
 	"google.golang.org/protobuf/encoding/prototext"
@@ -28,7 +30,7 @@ func parseReq(r io.Reader) (*plugin.CodeGeneratorRequest, error) {
 	return &req, nil
 }
 
-func addPrimitiveField(f *descriptor.FieldDescriptorProto, cpp_type string, pub_out *string, pri_out *string) {
+func addPrimitiveField(f *descriptor.FieldDescriptorProto, cpp_type string, msg_printer *MessagePrinter) {
 	const pri_template = `
 	{{.cpp_type}} {{.pri_name}};
 	bool has_{{.pri_name}};
@@ -72,7 +74,7 @@ func addPrimitiveField(f *descriptor.FieldDescriptorProto, cpp_type string, pub_
 		"cpp_type": cpp_type,
 		"pri_name": pri_name,
 	})
-	*pri_out = buf.String()
+	msg_printer.PushPrivate(buf.String())
 
 	buf.Reset()
 	pub_tpl.Execute(&buf, map[string]string{
@@ -80,10 +82,10 @@ func addPrimitiveField(f *descriptor.FieldDescriptorProto, cpp_type string, pub_
 		"pri_name": pri_name,
 		"f_name":   f.GetName(),
 	})
-	*pub_out = buf.String()
+	msg_printer.PushPublic(buf.String())
 }
 
-func addStringField(f *descriptor.FieldDescriptorProto, cpp_type string, pub_out *string, pri_out *string) {
+func addStringField(f *descriptor.FieldDescriptorProto, cpp_type string, msg_printer *MessagePrinter) {
 	const pri_template = `
 	{{.cpp_type}} {{.pri_name}};
 	bool has_{{.pri_name}};
@@ -128,7 +130,7 @@ func addStringField(f *descriptor.FieldDescriptorProto, cpp_type string, pub_out
 		"cpp_type": cpp_type,
 		"pri_name": pri_name,
 	})
-	*pri_out = buf.String()
+	msg_printer.PushPrivate(buf.String())
 
 	buf.Reset()
 	pub_tpl.Execute(&buf, map[string]string{
@@ -136,10 +138,10 @@ func addStringField(f *descriptor.FieldDescriptorProto, cpp_type string, pub_out
 		"pri_name": pri_name,
 		"f_name":   f.GetName(),
 	})
-	*pub_out = buf.String()
+	msg_printer.PushPublic(buf.String())
 }
 
-func addRepeatedPrimitiveField(f *descriptor.FieldDescriptorProto, cpp_type string, pub_out *string, pri_out *string) {
+func addRepeatedPrimitiveField(f *descriptor.FieldDescriptorProto, cpp_type string, msg_printer *MessagePrinter) {
 	const pri_template = `
 	std::vector<{{.cpp_type}}> {{.pri_name}};
 
@@ -174,7 +176,7 @@ func addRepeatedPrimitiveField(f *descriptor.FieldDescriptorProto, cpp_type stri
 		"cpp_type": cpp_type,
 		"pri_name": pri_name,
 	})
-	*pri_out = buf.String()
+	msg_printer.PushPrivate(buf.String())
 
 	buf.Reset()
 	pub_tpl.Execute(&buf, map[string]string{
@@ -182,10 +184,10 @@ func addRepeatedPrimitiveField(f *descriptor.FieldDescriptorProto, cpp_type stri
 		"pri_name": pri_name,
 		"f_name":   f.GetName(),
 	})
-	*pub_out = buf.String()
+	msg_printer.PushPublic(buf.String())
 }
 
-func addMessageField(f *descriptor.FieldDescriptorProto, cpp_type string, pub_out *string, pri_out *string) {
+func addMessageField(f *descriptor.FieldDescriptorProto, cpp_type string, msg_printer *MessagePrinter) {
 	const pri_template = `
 	std::unique_ptr<{{.cpp_type}}> {{.pri_name}};
 
@@ -228,7 +230,7 @@ func addMessageField(f *descriptor.FieldDescriptorProto, cpp_type string, pub_ou
 		"cpp_type": cpp_type,
 		"pri_name": pri_name,
 	})
-	*pri_out = buf.String()
+	msg_printer.PushPrivate(buf.String())
 
 	buf.Reset()
 	pub_tpl.Execute(&buf, map[string]string{
@@ -236,7 +238,7 @@ func addMessageField(f *descriptor.FieldDescriptorProto, cpp_type string, pub_ou
 		"pri_name": pri_name,
 		"f_name":   f.GetName(),
 	})
-	*pub_out = buf.String()
+	msg_printer.PushPublic(buf.String())
 }
 
 var primitive_name_map = map[descriptor.FieldDescriptorProto_Type]string{
@@ -274,22 +276,19 @@ func protoMessageTypeToCppType(f *descriptor.FieldDescriptorProto) string {
 	}
 }
 
-func processField(f *descriptor.FieldDescriptorProto) (string, string) {
-	var pub = ""
-	var pri = ""
-
+func processField(ctx *Context, msg_printer *MessagePrinter, f *descriptor.FieldDescriptorProto) {
 	cpp_name := protoMessageTypeToCppType(f)
 	if f.GetLabel() == descriptor.FieldDescriptorProto_LABEL_REPEATED {
 		// repeated
 		if isPrimitiveType(f) {
 			// primitive types
-			addRepeatedPrimitiveField(f, cpp_name, &pub, &pri)
+			addRepeatedPrimitiveField(f, cpp_name, msg_printer)
 		} else if f.GetType() == descriptor.FieldDescriptorProto_TYPE_STRING {
 			// string
-			addRepeatedPrimitiveField(f, cpp_name, &pub, &pri)
+			addRepeatedPrimitiveField(f, cpp_name, msg_printer)
 		} else if f.GetType() == descriptor.FieldDescriptorProto_TYPE_ENUM {
 			// enum
-			addRepeatedPrimitiveField(f, cpp_name, &pub, &pri)
+			addRepeatedPrimitiveField(f, cpp_name, msg_printer)
 		} else {
 			log.Fatal("Unsupported repeated field type", f.GetType(), f.GetName())
 		}
@@ -297,61 +296,69 @@ func processField(f *descriptor.FieldDescriptorProto) (string, string) {
 		// optional
 		if isPrimitiveType(f) {
 			// primitive types
-			addPrimitiveField(f, cpp_name, &pub, &pri)
+			addPrimitiveField(f, cpp_name, msg_printer)
 		} else if f.GetType() == descriptor.FieldDescriptorProto_TYPE_STRING {
 			// string
-			addStringField(f, cpp_name, &pub, &pri)
+			addStringField(f, cpp_name, msg_printer)
 		} else if f.GetType() == descriptor.FieldDescriptorProto_TYPE_ENUM {
 			// enum
-			addPrimitiveField(f, cpp_name, &pub, &pri)
+			addPrimitiveField(f, cpp_name, msg_printer)
 		} else if f.GetType() == descriptor.FieldDescriptorProto_TYPE_MESSAGE {
 			// message
-			addMessageField(f, cpp_name, &pub, &pri)
+			addMessageField(f, cpp_name, msg_printer)
 		} else {
 			log.Fatal("Unsupported field type", f.GetType(), f.GetName())
 		}
 	} else {
 		log.Fatal("Unsupported field label", f.GetLabel(), f.GetName())
 	}
-	return pub, pri
 }
 
-func processEnum(cpp_pkg []string, m *descriptor.EnumDescriptorProto) string {
+func processEnum(ctx *Context, m *descriptor.EnumDescriptorProto) {
 	var out string = ""
 
-	cpp_nested_pkg := append(cpp_pkg, m.GetName())
-	enum_name := strings.Join(cpp_nested_pkg, "_")
-	out += "enum " + enum_name + " {\n"
+	ctx.pushPackage(m.GetName())
+
+	full_name := strings.Join(ctx.cpp_nested_pkg, "_")
+	out += "enum " + full_name + " {\n"
 	for _, field := range m.GetValue() {
 		out += fmt.Sprintf("    %s = %d,\n", field.GetName(), field.GetNumber())
 	}
 	out += "};\n\n"
-	return out
+
+	ctx.popPackage()
+
+	ctx.printer.prototype_declarations += "enum " + full_name + ";\n"
+	ctx.printer.definitions += out
 }
 
-func processMessage(cpp_pkg []string, m *descriptor.DescriptorProto) string {
-	var out string = ""
+func processMessage(ctx *Context, m *descriptor.DescriptorProto) {
+	msg_printer := NewMessagePrinter()
 
-	cpp_nested_pkg := append(cpp_pkg, m.GetName())
+	msg_printer.short_name = m.GetName()
+	ctx.pushPackage(m.GetName())
+
 	// nested messages
 	for _, nested := range m.GetNestedType() {
-		out += processMessage(cpp_nested_pkg, nested)
+		processMessage(ctx, nested)
 	}
 	// nested enums
 	for _, nested := range m.GetEnumType() {
-		out += processEnum(cpp_nested_pkg, nested)
+		processEnum(ctx, nested)
 	}
 
-	var pub_fields = ""
-	var pri_fields = ""
+	msg_printer.full_name = strings.Join(ctx.cpp_nested_pkg, "_")
+
+	ctx.printer.prototype_declarations += "class " + msg_printer.full_name + ";\n"
+
 	for _, field := range m.GetField() {
-		pub, pri := processField(field)
-		pub_fields += pub
-		pri_fields += pri
+		processField(ctx, msg_printer, field)
 	}
 
-	class_name := strings.Join(cpp_nested_pkg, "_")
-	out += "class " + class_name + " {\n"
+	var out string = ""
+	class_name := strings.Join(ctx.cpp_nested_pkg, "_")
+
+	out += "class " + msg_printer.full_name + " {\n"
 	out += "public:\n"
 	// typedef nested messages
 	for _, nested := range m.GetNestedType() {
@@ -362,15 +369,18 @@ func processMessage(cpp_pkg []string, m *descriptor.DescriptorProto) string {
 		out += "    typedef " + class_name + "_" + nested.GetName() + " " + nested.GetName() + ";\n"
 	}
 	out += "private:\n"
-	out += pri_fields
+	out += msg_printer.fields_printer.PrintPrivates()
 	out += "\n"
 	out += "public:\n"
 	out += "    " + class_name + "() {};\n"
 	out += "    ~" + class_name + "() {};\n"
 	out += "\n"
-	out += pub_fields
+	out += msg_printer.fields_printer.PrintPublics()
 	out += "\n};\n\n"
-	return out
+
+	ctx.printer.definitions += out
+
+	ctx.popPackage()
 }
 
 func outputName(f *descriptor.FileDescriptorProto) string {
@@ -380,6 +390,83 @@ func outputName(f *descriptor.FileDescriptorProto) string {
 		strs = append(strs, "pb")
 	}
 	return strings.Join(strs, ".")
+}
+
+type Context struct {
+	printer        *FilePrinter
+	cpp_nested_pkg []string
+}
+
+func NewContext() *Context {
+	return &Context{
+		printer:        NewFilePrinter(),
+		cpp_nested_pkg: []string{},
+	}
+}
+
+func (ctx *Context) pushPackage(pkg string) {
+	ctx.cpp_nested_pkg = append(ctx.cpp_nested_pkg, pkg)
+}
+
+func (ctx *Context) popPackage() {
+	ctx.cpp_nested_pkg = ctx.cpp_nested_pkg[:len(ctx.cpp_nested_pkg)-1]
+}
+
+type MessagePrinter struct {
+	short_name     string // MyMessage
+	full_name      string // ::MyPackage::Nested::MyMessage
+	fields_printer *FieldsPrinter
+}
+
+func NewMessagePrinter() *MessagePrinter {
+	return &MessagePrinter{
+		short_name:     "",
+		full_name:      "",
+		fields_printer: NewFieldsPrinter(),
+	}
+}
+
+func (mp *MessagePrinter) PushPrivate(str string) {
+	mp.fields_printer.PushPrivate(str)
+}
+
+func (mp *MessagePrinter) PushPublic(str string) {
+	mp.fields_printer.PushPublic(str)
+}
+
+type FilePrinter struct {
+	includes map[string]struct{}
+
+	prototype_declarations string
+	definitions            string
+}
+
+func NewFilePrinter() *FilePrinter {
+	return &FilePrinter{
+		includes:               map[string]struct{}{},
+		prototype_declarations: "",
+		definitions:            "",
+	}
+}
+
+func (fp *FilePrinter) addInclude(inc string) {
+	fp.includes[inc] = struct{}{}
+}
+
+func (fp *FilePrinter) printIncludes() string {
+	keys := maps.Keys(fp.includes)
+	return strings.Join(keys, "\n")
+}
+
+func (fp *FilePrinter) printFile() string {
+	var content string = ""
+
+	content += fp.printIncludes()
+
+	content += fp.prototype_declarations
+	content += fp.definitions
+
+	return content
 }
 
 func processReq(req *plugin.CodeGeneratorRequest) *plugin.CodeGeneratorResponse {
@@ -394,24 +481,25 @@ func processReq(req *plugin.CodeGeneratorRequest) *plugin.CodeGeneratorResponse 
 		f := files[fname]
 		out_file_name := outputName(f)
 
-		var content = ""
-		content += "#include <memory>\n"
-		content += "#include <stdint.h>\n"
-		content += "#include <string>\n"
-		content += "#include <vector>\n"
-		content += "\n"
+		ctx := NewContext()
 
+		ctx.printer.addInclude("#include <memory>")
+		ctx.printer.addInclude("#include <stdint.h>")
+		ctx.printer.addInclude("#include <string>")
+		ctx.printer.addInclude("#include <vector>")
+
+		//
 		for _, enm := range f.EnumType {
-			content += processEnum([]string{}, enm)
+			processEnum(ctx, enm)
 		}
 
 		for _, message := range f.MessageType {
-			content += processMessage([]string{}, message)
+			processMessage(ctx, message)
 		}
 
-		content += "\n"
-		content += "\n"
+		content := ctx.printer.printFile()
 
+		// Dump all descriptors for reference
 		content += "/*\n"
 		content += prototext.MarshalOptions{Multiline: true, Indent: "    "}.Format(f)
 		content += "*/\n"

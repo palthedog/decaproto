@@ -30,3 +30,13 @@ cc_test(
         "@com_google_googletest//:gtest_main",
     ],
 )
+
+cc_test(
+    name = "def_order_test",
+    size = "small",
+    srcs = ["def_order_test.cc"],
+    deps = [
+        ":test_deca_proto",
+        "@com_google_googletest//:gtest_main",
+    ],
+)

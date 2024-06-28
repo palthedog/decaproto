@@ -37,6 +37,14 @@ http_archive(
     ],
 )
 
+http_archive(
+    name = "rules_proto_grpc",
+    sha256 = "c0d718f4d892c524025504e67a5bfe83360b3a982e654bc71fed7514eb8ac8ad",
+    strip_prefix = "rules_proto_grpc-4.6.0",
+    urls = ["https://github.com/rules-proto-grpc/rules_proto_grpc/archive/4.6.0.tar.gz"],
+)
+register_toolchains("@rules_proto_grpc//protobuf:protoc_toolchain")
+
 load("@io_bazel_rules_go//go:deps.bzl", "go_register_toolchains", "go_rules_dependencies")
 load("@bazel_gazelle//:deps.bzl", "gazelle_dependencies")
 
@@ -49,12 +57,3 @@ gazelle_dependencies()
 load("@rules_proto//proto:repositories.bzl", "rules_proto_dependencies", "rules_proto_toolchains")
 rules_proto_dependencies()
 rules_proto_toolchains()
-
-
-http_archive(
-    name = "rules_proto_grpc",
-    sha256 = "c0d718f4d892c524025504e67a5bfe83360b3a982e654bc71fed7514eb8ac8ad",
-    strip_prefix = "rules_proto_grpc-4.6.0",
-    urls = ["https://github.com/rules-proto-grpc/rules_proto_grpc/archive/4.6.0.tar.gz"],
-)
-register_toolchains("@rules_proto_grpc//protobuf:protoc_toolchain")

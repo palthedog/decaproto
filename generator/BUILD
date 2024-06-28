@@ -18,13 +18,16 @@ go_library(
 
 go_binary(
     name = "decaproto",
-    embed = [":project_lib"],
+    embed = [":generator_lib"],
     visibility = ["//visibility:public"],
 )
 
 go_library(
     name = "generator_lib",
-    srcs = ["main.go"],
+    srcs = [
+        "field.go",
+        "main.go",
+    ],
     importpath = "github.com/palthedog/decaproto/generator",
     visibility = ["//visibility:private"],
     deps = [
@@ -32,6 +35,7 @@ go_library(
         "@com_github_golang_protobuf//protoc-gen-go/plugin",
         "@org_golang_google_protobuf//encoding/prototext:go_default_library",
         "@org_golang_google_protobuf//proto:go_default_library",
+        "@org_golang_x_exp//maps:go_default_library",
     ],
 )
 
