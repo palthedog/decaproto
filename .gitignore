@@ -7,3 +7,4 @@ tmp/
 
 protoc-gen-deca_cpp
 *.pb.h
+compile_commands.json
