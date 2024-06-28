@@ -1,6 +1,6 @@
 module decaproto_generator
 
-go 1.20.7
+go 1.20
 
 require (
 	github.com/golang/protobuf v1.5.4
