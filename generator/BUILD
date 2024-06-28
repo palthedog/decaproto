@@ -12,8 +12,8 @@ go_binary(
 go_library(
     name = "generator_lib",
     srcs = [
-        "field.go",
         "main.go",
+        "field.go",
     ],
     importpath = "github.com/palthedog/decaproto/generator",
     visibility = ["//visibility:private"],

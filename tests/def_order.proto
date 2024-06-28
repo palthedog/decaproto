@@ -1,0 +1,17 @@
+syntax = "proto3";
+
+message DependingMessage {
+    // DependedMessage is defined below DependingMessage.
+    // Can our proto generator handle this properly?
+    DependedMessage depended = 1;
+    DependedEnum depended_enum = 2;
+}
+
+message DependedMessage {
+    int32 num = 1;
+}
+
+enum DependedEnum {
+    DEP_UNKNOWN = 0;
+    DEP_ENUM_A = 1;
+}
