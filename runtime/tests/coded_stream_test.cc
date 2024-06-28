@@ -34,6 +34,18 @@ TEST(StreamTest, ReadTest) {
     EXPECT_EQ(150, result);
 }
 
+TEST(StreamTest, ReadUint32Test) {
+    stringstream ss;
+    // 150 is encoded as 1001_0110 0000_0001
+    ss.put(0x96);
+    ss.put(0x01);
+
+    CodedInputStream cis(new StlInputStream(&ss));
+    uint32_t result;
+    EXPECT_TRUE(cis.ReadVarint(result));
+    EXPECT_EQ(150, result);
+}
+
 TEST(StreamTest, SignedTest) {
     stringstream ss;
     // Signed Value: Encoded as ZigZag
@@ -48,6 +60,33 @@ TEST(StreamTest, SignedTest) {
 
     CodedInputStream cis(new StlInputStream(&ss));
     int64_t result;
+    EXPECT_TRUE(cis.ReadSignedVarint(result));
+    EXPECT_EQ(0, result);
+
+    EXPECT_TRUE(cis.ReadSignedVarint(result));
+    EXPECT_EQ(-1, result);
+
+    EXPECT_TRUE(cis.ReadSignedVarint(result));
+    EXPECT_EQ(1, result);
+
+    EXPECT_TRUE(cis.ReadSignedVarint(result));
+    EXPECT_EQ(-2, result);
+}
+
+TEST(StreamTest, SignedInt32Test) {
+    stringstream ss;
+    // Signed Value: Encoded as ZigZag
+    // 0: 0
+    // -1: 1
+    // 1: 2
+    // -2: 3
+    ss.put(0x00);
+    ss.put(0x01);
+    ss.put(0x02);
+    ss.put(0x03);
+
+    CodedInputStream cis(new StlInputStream(&ss));
+    int32_t result;
     EXPECT_TRUE(cis.ReadSignedVarint(result));
     EXPECT_EQ(0, result);
 
@@ -102,7 +141,7 @@ TEST(StreamTest, BiggerSignedTest) {
     EXPECT_EQ(INT64_MIN, signed_value);
 }
 
-TEST(StreamTest, Read64bitsTest) {
+TEST(StreamTest, ReadBigValueTest) {
     stringstream ss;
     // A number bigger than 32 bits max
     // 0x80 0x80 0x80 0x80 0x10
@@ -117,6 +156,22 @@ TEST(StreamTest, Read64bitsTest) {
     uint64_t result;
     EXPECT_TRUE(cis.ReadVarint(result));
     EXPECT_EQ(uint64_t{1} << 32, result);
+}
+
+TEST(StreamTest, ReadOverflow32bitsTest) {
+    stringstream ss;
+    // A number bigger than 32 bits max
+    // 0x80 0x80 0x80 0x80 0x10
+    // 7 + 7 + 7 + 7 + 4 = 32 bits
+    ss.put(0x80);
+    ss.put(0x80);
+    ss.put(0x80);
+    ss.put(0x80);
+    ss.put(0x10);
+
+    CodedInputStream cis(new StlInputStream(&ss));
+    uint32_t result;
+    EXPECT_FALSE(cis.ReadVarint(result));
 }
 
 TEST(StreamTest, ReadMultipleVarintsTest) {
@@ -191,6 +246,9 @@ TEST(StreamTest, ReadVarintFailureTest) {
 
     CodedInputStream cis(new StlInputStream(&ss));
     uint64_t result;
+    EXPECT_FALSE(cis.ReadVarint(result));
+
+    // Try to read on an empty stream again
     EXPECT_FALSE(cis.ReadVarint(result));
 }
 
