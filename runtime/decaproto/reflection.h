@@ -16,6 +16,8 @@ class Reflection {
     template <typename T>
     using SetterFn = std::function<void(Message*, T)>;
 
+    using MutableFn = std::function<Message*(Message*)>;
+
 #define DEFINE_FOR(cc_arg_type, CcType) \
     std::map<uint32_t, SetterFn<cc_arg_type>> set_##CcType##_impls_;
 
@@ -32,6 +34,8 @@ class Reflection {
     DEFINE_FOR(const std::string&, String)
 
 #undef DEFINE_FOR
+
+    std::map<uint32_t, MutableFn> mutable_Message_impls_;
 
 public:
     Reflection() {
@@ -68,8 +72,15 @@ public:
     DEFINE_FOR(bool, Bool)
     DEFINE_FOR(const std::string&, String)
 
-#undef DEFINE_FOR
+#undef DEFINE_FOR  // Define Registerer
 
+    void RegisterMessageField(
+        const FieldDescriptor& field, const MutableFn& mut_getter) {
+        uint32_t tag = field.GetTag();
+        mutable_Message_impls_[tag] = mut_getter;
+    }
+
+    ////
     // Define setters.
     // Don't try to share a macro to generate both setter/getter and similars.
     // We prefer readability rather than writability.
@@ -92,72 +103,16 @@ public:
     DEFINE_FOR(bool, Bool)
     DEFINE_FOR(const std::string&, String)
 
-#undef DEFINE_FOR
+#undef DEFINE_FOR  // Define setters
 
-    /*
-        void SetUInt32(
-            Message* message, const FieldDescriptor* field, uint32_t value)
-       const { auto it = set_uint32_impls_.find(field->GetTag()); assert(it !=
-       set_uint32_impls_.end()); it->second(message, value);
-        }
-    */
-    /*
-        virtual void SetInt32(
-            Message* message, const FieldDescriptor* field, int32_t value)
-       const = 0; virtual void SetInt64( Message* message, const
-       FieldDescriptor* field, int64_t value) const = 0;
-    */
-    /*
-     void SetUInt32(
-         Message* message, const FieldDescriptor* field, uint32_t value) const {
-         auto it = set_uint32_impls_.find(field->GetTag());
-         assert(it != set_uint32_impls_.end());
-         it->second(message, value);
-     }
-     */
-    /*
-    virtual void SetUInt64(
-    Message* message, const FieldDescriptor* field, uint64_t value) const =
-    0; virtual void SetFloat( Message* message, const FieldDescriptor* field,
-    float value) const = 0; virtual void SetDouble( Message* message, const
-    FieldDescriptor* field, double value) const = 0; virtual void SetBool(
-    Message* message, const FieldDescriptor* field, bool value) const = 0;
-    */
-
-    /*
-        void SetString(
-            Message* message,
-            const FieldDescriptor* field,
-            const std::string& value) const {
-            auto it = set_string_impls_.find(field->GetTag());
-            assert(it != set_string_impls_.end());
-            it->second(message, value);
-        }
-        */
-    /*
-    virtual void SetEnum(
-    Message* message, const FieldDescriptor* field, int value) const = 0;
-
-    virtual int32_t GetInt32(
-    const Message* message, const FieldDescriptor* field) const const = 0;
-    virtual int64_t GetInt64(
-    const Message* message, const FieldDescriptor* field) const const = 0;
-    virtual uint32_t GetUInt32(
-    const Message* message, const FieldDescriptor* field) const const = 0;
-    virtual uint64_t GetUInt64(
-    const Message* message, const FieldDescriptor* field) const const = 0;
-    virtual float GetFloat(
-    const Message* message, const FieldDescriptor* field) const const = 0;
-    virtual double GetDouble(
-    const Message* message, const FieldDescriptor* field) const const = 0;
-    virtual bool GetBool(
-    const Message* message, const FieldDescriptor* field) const const = 0;
-    virtual const std::string& GetString(
-    const Message* message, const FieldDescriptor* field) const const = 0;
-    virtual int GetEnum(
-    const Message* message, const FieldDescriptor* field) const const = 0;
-    */
-};  // namespace decaproto
+    // Returns a mutable field message associated with the FieldDescriptor
+    Message* MutableMessage(
+        Message* message, const FieldDescriptor* field) const {
+        auto it = mutable_Message_impls_.find(field->GetTag());
+        assert(it != mutable_Message_impls_.end());
+        return it->second(message);
+    }
+};
 
 }  // namespace decaproto
 
