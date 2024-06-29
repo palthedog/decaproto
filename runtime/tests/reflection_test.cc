@@ -13,8 +13,6 @@ using namespace std;
 Descriptor* kTestDescriptor = nullptr;
 Reflection* kTestReflection = nullptr;
 
-class TestReflection;
-
 const int kNumTag = 0;
 const int kStrTag = 1;
 class ReflectionTestMessage : public Message {
@@ -51,55 +49,41 @@ public:
 
         // Descriptor which represents this Message.
         kTestDescriptor = new Descriptor();
-        kTestDescriptor->AddField(FieldDescriptor(kNumTag, FieldType::kUint32));
-        kTestDescriptor->AddField(FieldDescriptor(kStrTag, FieldType::kString));
+        kTestDescriptor->RegisterField(
+            FieldDescriptor(kNumTag, FieldType::kUInt32));
+        kTestDescriptor->RegisterField(
+            FieldDescriptor(kStrTag, FieldType::kString));
         return kTestDescriptor;
     }
 
-    const Reflection* GetReflection() const override;
-};
-
-class TestReflection : public Reflection {
-public:
-    void SetUInt32(
-        Message* base_message,
-        const FieldDescriptor* field,
-        uint32_t value) const override {
-        ReflectionTestMessage* message =
-            static_cast<ReflectionTestMessage*>(base_message);
-
-        EXPECT_EQ(kUint32, field->GetType());
-
-        if (field->GetTag() == kNumTag) {
-            message->set_num(value);
-        } else {
-            FAIL() << "Invalid field tag" << field->GetTag();
+    const Reflection* GetReflection() const override {
+        if (kTestReflection != nullptr) {
+            return kTestReflection;
         }
-    }
 
-    void SetString(
-        Message* base_message,
-        const FieldDescriptor* field,
-        const string& value) const override {
-        ReflectionTestMessage* message =
-            static_cast<ReflectionTestMessage*>(base_message);
+        // Descriptor which produces dynamic ways to access the message
+        kTestReflection = new Reflection();
 
-        EXPECT_EQ(kString, field->GetType());
+        // uint32 num = 1
+        kTestReflection->RegisterUInt32Field(
+            FieldDescriptor(kNumTag, FieldType::kUInt32),
+            [](Message* base_message, uint32_t value) {
+                ReflectionTestMessage* message =
+                    static_cast<ReflectionTestMessage*>(base_message);
+                message->set_num(value);
+            });
 
-        if (field->GetTag() == kStrTag) {
-            message->set_str(value);
-        } else {
-            FAIL() << "Invalid field tag" << field->GetTag();
-        }
+        // string str = 2
+        kTestReflection->RegisterStringField(
+            FieldDescriptor(kStrTag, FieldType::kString),
+            [](Message* base_message, const string& value) {
+                ReflectionTestMessage* message =
+                    static_cast<ReflectionTestMessage*>(base_message);
+                message->set_str(value);
+            });
+        return kTestReflection;
     }
 };
-
-const Reflection* ReflectionTestMessage::GetReflection() const {
-    if (kTestReflection == nullptr) {
-        kTestReflection = new TestReflection();
-    }
-    return kTestReflection;
-}
 
 TEST(ReflectionTest, SimpleTest) {
     ReflectionTestMessage m;

@@ -15,10 +15,10 @@ enum FieldType {
 
     kInt32 = 3,
     kInt64 = 4,
-    kUint32 = 5,
-    kUint64 = 6,
-    kSint32 = 7,
-    kSint64 = 8,
+    kUInt32 = 5,
+    kUInt64 = 6,
+    kSInt32 = 7,
+    kSInt64 = 8,
 
     kFixed32 = 9,
     kFixed64 = 10,
@@ -40,10 +40,6 @@ class FieldDescriptor {
 
     bool repeated_;
     bool packed_;
-
-    // Member pointer to a field of Message class.
-    // Member pointer to a field of Message class.
-    //(void*)Message::*field_ptr_;
 
 public:
     FieldDescriptor() {
@@ -88,7 +84,7 @@ public:
     ~Descriptor() {
     }
 
-    void AddField(const FieldDescriptor& field) {
+    void RegisterField(const FieldDescriptor& field) {
         fields_.push_back(field);
     }
 

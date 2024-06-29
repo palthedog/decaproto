@@ -1,11 +1,13 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
 	"io"
 	"log"
 	"os"
 	"strings"
+	"text/template"
 
 	"golang.org/x/exp/maps"
 
@@ -43,15 +45,61 @@ func processEnum(ctx *Context, m *descriptor.EnumDescriptorProto) {
 	ctx.popPackage()
 }
 
-func printReflection(fp *FilePrinter, mp *MessagePrinter) {
+func printReflection(m *descriptor.DescriptorProto, fp *FilePrinter, mp *MessagePrinter) {
 	// Declaration
 	mp.publics += "    const decaproto::Reflection* GetReflection() const override;\n"
 
 	// Definition
+	msg_full_name := mp.full_name
+	var singleton_name = "k" + mp.full_name + "__Reflection"
 	var src string = ""
+	src += "\n"
+	src += "// A singleton Reflection object for " + mp.full_name + "\n"
+	src += "decaproto::Reflection* " + singleton_name + " = nullptr;\n"
+	src += "\n"
 	src += "const decaproto::Reflection* " + mp.full_name + "::GetReflection() const {\n"
-	src += "    // TODO: Implement me\n"
-	src += "    return nullptr;\n"
+	src += "    if (" + singleton_name + " != nullptr) {\n"
+	src += "        return " + singleton_name + ";\n"
+	src += "    }\n"
+	src += "    " + singleton_name + " = new decaproto::Reflection();\n"
+
+	for _, f := range m.GetField() {
+		src += "    "
+		if f.GetType() == descriptor.FieldDescriptorProto_TYPE_MESSAGE {
+			// TODO: Suport me
+			continue
+		}
+		if f.GetType() == descriptor.FieldDescriptorProto_TYPE_ENUM {
+			// TODO: Suport me
+			continue
+		}
+		if f.GetLabel() == descriptor.FieldDescriptorProto_LABEL_REPEATED {
+			// TODO: Suport me
+			continue
+		}
+		type_name := getTypeNameInfo(f)
+		var t = template.Must(template.New("reg_field").Parse(`
+            {{.singleton_name}}->Register{{.CcType}}Field(
+            decaproto::FieldDescriptor({{.tag}}, {{.field_type}}),
+            [](Message* base_message, {{.cc_arg_type}} value) {
+                {{.msg_full_name}}* message =
+                    static_cast< {{.msg_full_name}} *>(base_message);
+                message->set_{{.field_name}} (value);
+            });
+		`))
+		var buf bytes.Buffer
+		t.Execute(&buf, map[string]string{
+			"singleton_name": singleton_name,
+			"CcType":         type_name.cc_camel_name,
+			"tag":            fmt.Sprintf("%d", f.GetNumber()),
+			"field_type":     type_name.deca_enum_name,
+			"cc_arg_type":    type_name.cc_arg_type,
+			"msg_full_name":  msg_full_name,
+			"field_name":     f.GetName(),
+		})
+		src += buf.String()
+	}
+	src += "    return " + singleton_name + ";\n"
 	src += "}\n"
 
 	fp.source_content += src
@@ -62,7 +110,7 @@ func printDescriptor(m *descriptor.DescriptorProto, fp *FilePrinter, mp *Message
 	mp.publics += "    const decaproto::Descriptor* GetDescriptor() const override;\n"
 
 	// Definition
-	var desc_name = "k" + mp.full_name + "_Descriptor"
+	var desc_name = "k" + mp.full_name + "__Descriptor"
 	var src string = ""
 	src += "\n"
 	src += "// A singleton Descriptor for " + mp.full_name + "\n"
@@ -75,9 +123,9 @@ func printDescriptor(m *descriptor.DescriptorProto, fp *FilePrinter, mp *Message
 	src += "    " + desc_name + " = new decaproto::Descriptor();\n"
 	for _, f := range m.GetField() {
 		tag := f.GetNumber()
-		field_type := getCppFieldType(f.GetType())
+		field_type := getTypeNameInfo(f).deca_enum_name
 		src += "    "
-		src += fmt.Sprintf("%s->AddField(decaproto::FieldDescriptor(%d, %s));\n",
+		src += fmt.Sprintf("%s->RegisterField(decaproto::FieldDescriptor(%d, %s));\n",
 			desc_name,
 			tag,
 			field_type)
@@ -126,7 +174,7 @@ func processMessage(ctx *Context, m *descriptor.DescriptorProto) {
 		processField(ctx, msg_printer, field)
 	}
 	printDescriptor(m, ctx.printer, msg_printer)
-	printReflection(ctx.printer, msg_printer)
+	printReflection(m, ctx.printer, msg_printer)
 
 	ctx.printer.definitions += msg_printer.printClassDefinition()
 
@@ -296,6 +344,8 @@ func processReq(req *plugin.CodeGeneratorRequest) *plugin.CodeGeneratorResponse 
 		ctx.printer.addInclude("#include \"decaproto/reflection.h\"")
 
 		ctx.printer.source_content += "#include \"" + header_file_name + "\"\n"
+		ctx.printer.source_content += "\n"
+		ctx.printer.source_content += "#include <cassert>\n"
 		ctx.printer.source_content += "\n"
 
 		for _, enm := range f.EnumType {

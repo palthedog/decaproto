@@ -9,41 +9,70 @@ import (
 	descriptor "github.com/golang/protobuf/protoc-gen-go/descriptor"
 )
 
-var primitive_name_map = map[descriptor.FieldDescriptorProto_Type]string{
-	descriptor.FieldDescriptorProto_TYPE_INT64:  "int64_t",
-	descriptor.FieldDescriptorProto_TYPE_INT32:  "int32_t",
-	descriptor.FieldDescriptorProto_TYPE_DOUBLE: "double",
-	descriptor.FieldDescriptorProto_TYPE_FLOAT:  "float",
-	descriptor.FieldDescriptorProto_TYPE_BOOL:   "bool",
+type TypeNameInfo struct {
+	// Type names...
+
+	// in .proto files
+	// e.g. uint64, int32, string
+	proto_name string
+
+	// in decaproto FieldType enum
+	// e.g. FieldType::kUInt64, FieldType::kInt32, FieldType::kString
+	deca_enum_name string
+
+	// in native C++ codes. when used as a return value for getters
+	// e.g. uint64_t, int32_t, std::string
+	cc_ret_type string
+
+	// in native C++ codes. when used as a const value
+	// e.g. uint64_t, int32_t, const std::string&
+	cc_arg_type string
+
+	// for camel case C++ type
+	// e.g. UInt64, Int32, String
+	cc_camel_name string
 }
 
-var go_desc_type_to_cpp_desc_type = map[descriptor.FieldDescriptorProto_Type]string{
-	descriptor.FieldDescriptorProto_TYPE_INT64:   "FieldType::kUint64",
-	descriptor.FieldDescriptorProto_TYPE_INT32:   "FieldType::kInt32",
-	descriptor.FieldDescriptorProto_TYPE_DOUBLE:  "FieldType::kDouble",
-	descriptor.FieldDescriptorProto_TYPE_FLOAT:   "FieldType::kFloat",
-	descriptor.FieldDescriptorProto_TYPE_BOOL:    "FieldType::kBool",
-	descriptor.FieldDescriptorProto_TYPE_STRING:  "FieldType::kString",
-	descriptor.FieldDescriptorProto_TYPE_MESSAGE: "FieldType::kMessage",
-	descriptor.FieldDescriptorProto_TYPE_ENUM:    "FieldType::kEnum",
-}
-
-func getCppFieldType(typ descriptor.FieldDescriptorProto_Type) string {
-	type_name, ok := go_desc_type_to_cpp_desc_type[typ]
-	if !ok {
-		log.Fatal("Unsupported field type", typ)
+func NewTypeNameInfo(proto_name, deca_enum_name, cc_ret_type, cc_arg_type, cc_camel_name string) TypeNameInfo {
+	return TypeNameInfo{
+		proto_name:     proto_name,
+		deca_enum_name: "decaproto::FieldType::" + deca_enum_name,
+		cc_ret_type:    cc_ret_type,
+		cc_arg_type:    cc_arg_type,
+		cc_camel_name:  cc_camel_name,
 	}
-	return "decaproto::" + type_name
 }
 
+var type_name_infos_map = map[descriptor.FieldDescriptorProto_Type]TypeNameInfo{
+	descriptor.FieldDescriptorProto_TYPE_UINT64:  NewTypeNameInfo("uint64", "kUInt64", "uint64_t", "uint64_t", "UInt64"),
+	descriptor.FieldDescriptorProto_TYPE_INT64:   NewTypeNameInfo("int64", "kInt64", "int64_t", "int64_t", "Int64"),
+	descriptor.FieldDescriptorProto_TYPE_FIXED64: NewTypeNameInfo("fixed64", "kFixed64", "uint64_t", "uint64_t", "UInt64"),
+	descriptor.FieldDescriptorProto_TYPE_UINT32:  NewTypeNameInfo("uint32", "kUInt32", "uint32_t", "uint32_t", "UInt32"),
+	descriptor.FieldDescriptorProto_TYPE_INT32:   NewTypeNameInfo("int32", "kInt32", "int32_t", "int32_t", "Int32"),
+	descriptor.FieldDescriptorProto_TYPE_FIXED32: NewTypeNameInfo("fixed32", "kFixed32", "uint32_t", "uint32_t", "UInt32"),
+	descriptor.FieldDescriptorProto_TYPE_DOUBLE:  NewTypeNameInfo("double", "kDouble", "double", "double", "Double"),
+	descriptor.FieldDescriptorProto_TYPE_FLOAT:   NewTypeNameInfo("float", "kFloat", "float", "float", "Float"),
+	descriptor.FieldDescriptorProto_TYPE_BOOL:    NewTypeNameInfo("bool", "kBool", "bool", "bool", "Bool"),
+	descriptor.FieldDescriptorProto_TYPE_STRING:  NewTypeNameInfo("string", "kString", "std::string", "const std::string&", "String"),
+
+	descriptor.FieldDescriptorProto_TYPE_MESSAGE: NewTypeNameInfo("N_A_FILL_ME", "kMessage", "N_A_FILL_ME", "N_A_FILL_ME", "N_A_FILL_ME_Message"),
+	descriptor.FieldDescriptorProto_TYPE_ENUM:    NewTypeNameInfo("N_A_FILL_ME", "kEnum", "N_A_FILL_ME", "N_A_FILL_ME", "N_A_FILL_ME_Enum"),
+}
+
+func getTypeNameInfo(f *descriptor.FieldDescriptorProto) TypeNameInfo {
+	info, ok := type_name_infos_map[f.GetType()]
+	if !ok {
+		// TODO: Support message
+		// we can create TypeInfoName struct here for messages
+		log.Fatal("Unsupported field type", f.GetType(), f.GetName())
+	}
+	return info
+}
+
+// TODO: Get rid of it.Return TypeNameInfo instead (even for Messges)
+//  otherwise, we can't generate setters/getters in proper way
 func protoMessageTypeToCppType(f *descriptor.FieldDescriptorProto) string {
-	cpp_name, ok := primitive_name_map[f.GetType()]
-	if ok {
-		// primitive types
-		return cpp_name
-	} else if f.GetType() == descriptor.FieldDescriptorProto_TYPE_STRING {
-		return "std::string"
-	} else if f.GetType() == descriptor.FieldDescriptorProto_TYPE_MESSAGE {
+	if f.GetType() == descriptor.FieldDescriptorProto_TYPE_MESSAGE {
 		// .OtherMessage
 		// .OuterMessage.OtherMessage
 		m := f.GetTypeName()
@@ -52,6 +81,12 @@ func protoMessageTypeToCppType(f *descriptor.FieldDescriptorProto) string {
 		// enum
 		m := f.GetTypeName()
 		return strings.Join(strings.Split(m, "."), "::")
+	}
+
+	cpp_name, ok := type_name_infos_map[f.GetType()]
+	if ok {
+		// primitive types
+		return cpp_name.cc_ret_type
 	} else {
 		log.Fatal("Unsupported field type", f.GetType(), f.GetName())
 		return ""
@@ -59,8 +94,19 @@ func protoMessageTypeToCppType(f *descriptor.FieldDescriptorProto) string {
 }
 
 func isPrimitiveType(f *descriptor.FieldDescriptorProto) bool {
-	_, ok := primitive_name_map[f.GetType()]
-	return ok
+	switch f.GetType() {
+	case descriptor.FieldDescriptorProto_TYPE_UINT64,
+		descriptor.FieldDescriptorProto_TYPE_INT64,
+		descriptor.FieldDescriptorProto_TYPE_FIXED64,
+		descriptor.FieldDescriptorProto_TYPE_UINT32,
+		descriptor.FieldDescriptorProto_TYPE_INT32,
+		descriptor.FieldDescriptorProto_TYPE_FIXED32,
+		descriptor.FieldDescriptorProto_TYPE_DOUBLE,
+		descriptor.FieldDescriptorProto_TYPE_FLOAT,
+		descriptor.FieldDescriptorProto_TYPE_BOOL:
+		return true
+	}
+	return false
 }
 
 func processField(ctx *Context, msg_printer *MessagePrinter, f *descriptor.FieldDescriptorProto) {
