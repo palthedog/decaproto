@@ -83,4 +83,5 @@
         "typeindex": "cpp",
         "variant": "cpp"
     },
+    "go.formatTool": "gofmt",
 }

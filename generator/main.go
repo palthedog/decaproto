@@ -65,39 +65,69 @@ func printReflection(m *descriptor.DescriptorProto, fp *FilePrinter, mp *Message
 
 	for _, f := range m.GetField() {
 		src += "    "
-		if f.GetType() == descriptor.FieldDescriptorProto_TYPE_MESSAGE {
-			// TODO: Suport me
-			continue
-		}
-		if f.GetType() == descriptor.FieldDescriptorProto_TYPE_ENUM {
-			// TODO: Suport me
-			continue
-		}
-		if f.GetLabel() == descriptor.FieldDescriptorProto_LABEL_REPEATED {
-			// TODO: Suport me
-			continue
-		}
 		type_name := getTypeNameInfo(f)
-		var t = template.Must(template.New("reg_field").Parse(`
-            {{.singleton_name}}->Register{{.CcType}}Field(
-            decaproto::FieldDescriptor({{.tag}}, {{.field_type}}),
-            [](Message* base_message, {{.cc_arg_type}} value) {
-                {{.msg_full_name}}* message =
-                    static_cast< {{.msg_full_name}} *>(base_message);
-                message->set_{{.field_name}} (value);
-            });
-		`))
-		var buf bytes.Buffer
-		t.Execute(&buf, map[string]string{
-			"singleton_name": singleton_name,
-			"CcType":         type_name.cc_camel_name,
-			"tag":            fmt.Sprintf("%d", f.GetNumber()),
-			"field_type":     type_name.deca_enum_name,
-			"cc_arg_type":    type_name.cc_arg_type,
-			"msg_full_name":  msg_full_name,
-			"field_name":     f.GetName(),
-		})
-		src += buf.String()
+		if f.GetType() == descriptor.FieldDescriptorProto_TYPE_MESSAGE {
+			var t = template.Must(template.New("reg_msg_field").Parse(`
+    {{.singleton_name}}->RegisterMessageField(
+        decaproto::FieldDescriptor({{.tag}}, {{.field_type}}),
+		// Mutable getter
+        [](Message* base_message) {
+            {{.msg_full_name}}* message =
+                static_cast< {{.msg_full_name}} *>(base_message);
+            return message->mutable_{{.field_name}} ();
+        },
+		// Getter
+        [](const Message* base_message) {
+            const {{.msg_full_name}}* message =
+                static_cast<const {{.msg_full_name}} *>(base_message);
+            return message->{{.field_name}}();
+        }
+	);`))
+			var buf bytes.Buffer
+			t.Execute(&buf, map[string]string{
+				"singleton_name": singleton_name,
+				"tag":            fmt.Sprintf("%d", f.GetNumber()),
+				"field_type":     type_name.deca_enum_name,
+				"cc_arg_type":    type_name.cc_arg_type,
+				"msg_full_name":  msg_full_name,
+				"field_name":     f.GetName(),
+			})
+			src += buf.String()
+		} else if f.GetType() == descriptor.FieldDescriptorProto_TYPE_ENUM {
+			// TODO: Suport me
+			continue
+		} else if f.GetLabel() == descriptor.FieldDescriptorProto_LABEL_REPEATED {
+			// TODO: Suport me
+			continue
+		} else if isPrimitiveType(f) {
+			var t = template.Must(template.New("reg_field").Parse(`
+    {{.singleton_name}}->Register{{.CcType}}Field(
+        decaproto::FieldDescriptor({{.tag}}, {{.field_type}}),
+	    // Setter
+        [](Message* base_message, {{.cc_arg_type}} value) {
+            {{.msg_full_name}}* message =
+            static_cast< {{.msg_full_name}} *>(base_message);
+            message->set_{{.field_name}} (value);
+        },
+	    // Getter
+        [](const Message* base_message) {
+            const {{.msg_full_name}}* message =
+                static_cast<const {{.msg_full_name}} *>(base_message);
+            return message->{{.field_name}}();
+        }
+	);`))
+			var buf bytes.Buffer
+			t.Execute(&buf, map[string]string{
+				"singleton_name": singleton_name,
+				"CcType":         type_name.cc_camel_name,
+				"tag":            fmt.Sprintf("%d", f.GetNumber()),
+				"field_type":     type_name.deca_enum_name,
+				"cc_arg_type":    type_name.cc_arg_type,
+				"msg_full_name":  msg_full_name,
+				"field_name":     f.GetName(),
+			})
+			src += buf.String()
+		}
 	}
 	src += "    return " + singleton_name + ";\n"
 	src += "}\n"
@@ -314,10 +344,6 @@ func (fp *FilePrinter) printHeaderFile() string {
 	content += "\n"
 
 	return content
-}
-
-func (fp *FilePrinter) printSourceFile() string {
-	return ""
 }
 
 func processReq(req *plugin.CodeGeneratorRequest) *plugin.CodeGeneratorResponse {

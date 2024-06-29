@@ -16,10 +16,14 @@ class Reflection {
     template <typename T>
     using SetterFn = std::function<void(Message*, T)>;
 
+    template <typename T>
+    using GetterFn = std::function<T(const Message*)>;
+
     using MutableFn = std::function<Message*(Message*)>;
 
-#define DEFINE_FOR(cc_arg_type, CcType) \
-    std::map<uint32_t, SetterFn<cc_arg_type>> set_##CcType##_impls_;
+#define DEFINE_FOR(cc_type, CcType)                              \
+    std::map<uint32_t, SetterFn<cc_type>> set_##CcType##_impls_; \
+    std::map<uint32_t, GetterFn<cc_type>> get_##CcType##_impls_;
 
     // This is the expanded version of the above macro for reference.
     // std::map<uint32_t, SetterFn<uint32_t>> set_UInt32_impls_;
@@ -36,6 +40,7 @@ class Reflection {
 #undef DEFINE_FOR
 
     std::map<uint32_t, MutableFn> mutable_Message_impls_;
+    std::map<uint32_t, GetterFn<const Message&>> get_Message_impls_;
 
 public:
     Reflection() {
@@ -46,11 +51,14 @@ public:
 
     // Allows the code generator to register setter/getter for the given field.
     // Internal use only.
-#define DEFINE_FOR(cc_arg_type, CcType)                                      \
-    void Register##CcType##Field(                                            \
-        const FieldDescriptor& field, const SetterFn<cc_arg_type>& setter) { \
-        uint32_t tag = field.GetTag();                                       \
-        set_##CcType##_impls_[tag] = setter;                                 \
+#define DEFINE_FOR(cc_type, CcType)          \
+    void Register##CcType##Field(            \
+        const FieldDescriptor& field,        \
+        const SetterFn<cc_type>& setter,     \
+        const GetterFn<cc_type>& getter) {   \
+        uint32_t tag = field.GetTag();       \
+        set_##CcType##_impls_[tag] = setter; \
+        get_##CcType##_impls_[tag] = getter; \
     }
 
     // This is the expanded version of the above macro for reference.
@@ -75,9 +83,12 @@ public:
 #undef DEFINE_FOR  // Define Registerer
 
     void RegisterMessageField(
-        const FieldDescriptor& field, const MutableFn& mut_getter) {
+        const FieldDescriptor& field,
+        const MutableFn& mut_getter,
+        const GetterFn<const Message&>& getter) {
         uint32_t tag = field.GetTag();
         mutable_Message_impls_[tag] = mut_getter;
+        get_Message_impls_[tag] = getter;
     }
 
     ////
@@ -85,13 +96,19 @@ public:
     // Don't try to share a macro to generate both setter/getter and similars.
     // We prefer readability rather than writability.
 
-#define DEFINE_FOR(cc_arg_type, CcType)                                    \
-    void Set##CcType(                                                      \
-        Message* message, const FieldDescriptor* field, cc_arg_type value) \
-        const {                                                            \
-        auto it = set_##CcType##_impls_.find(field->GetTag());             \
-        assert(it != set_##CcType##_impls_.end());                         \
-        it->second(message, value);                                        \
+#define DEFINE_FOR(cc_type, CcType)                                            \
+    void Set##CcType(                                                          \
+        Message* message, const FieldDescriptor* field, cc_type value) const { \
+        auto it = set_##CcType##_impls_.find(field->GetTag());                 \
+        assert(it != set_##CcType##_impls_.end());                             \
+        it->second(message, value);                                            \
+    }                                                                          \
+                                                                               \
+    cc_type Get##CcType(const Message* message, const FieldDescriptor* field)  \
+        const {                                                                \
+        auto it = get_##CcType##_impls_.find(field->GetTag());                 \
+        assert(it != get_##CcType##_impls_.end());                             \
+        return it->second(message);                                            \
     }
 
     DEFINE_FOR(uint64_t, UInt64)
@@ -103,7 +120,7 @@ public:
     DEFINE_FOR(bool, Bool)
     DEFINE_FOR(const std::string&, String)
 
-#undef DEFINE_FOR  // Define setters
+#undef DEFINE_FOR  // Define setters/getters
 
     // Returns a mutable field message associated with the FieldDescriptor
     Message* MutableMessage(

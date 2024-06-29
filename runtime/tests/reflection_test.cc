@@ -53,7 +53,7 @@ public:
         num_ = num;
     }
 
-    uint32_t num() {
+    uint32_t num() const {
         return num_;
     }
 
@@ -61,7 +61,7 @@ public:
         str_ = str;
     }
 
-    const std::string& str() {
+    const std::string& str() const {
         return str_;
     }
 
@@ -69,7 +69,7 @@ public:
         return other_.get() != nullptr;
     }
 
-    const OtherMessage& other() {
+    const OtherMessage& other() const {
         return *other_;
     }
 
@@ -111,6 +111,11 @@ public:
                 ReflectionTestMessage* message =
                     static_cast<ReflectionTestMessage*>(base_message);
                 message->set_num(value);
+            },
+            [](const Message* base_message) {
+                const ReflectionTestMessage* message =
+                    static_cast<const ReflectionTestMessage*>(base_message);
+                return message->num();
             });
 
         // string str = 2
@@ -120,6 +125,11 @@ public:
                 ReflectionTestMessage* message =
                     static_cast<ReflectionTestMessage*>(base_message);
                 message->set_str(value);
+            },
+            [](const Message* base_message) {
+                const ReflectionTestMessage* message =
+                    static_cast<const ReflectionTestMessage*>(base_message);
+                return message->str();
             });
 
         // OtherMessage other = 3
@@ -129,6 +139,11 @@ public:
                 ReflectionTestMessage* message =
                     static_cast<ReflectionTestMessage*>(base_message);
                 return message->mutable_other();
+            },
+            [](const Message* base_message) {
+                const ReflectionTestMessage* message =
+                    static_cast<const ReflectionTestMessage*>(base_message);
+                return message->other();
             });
 
         return kTestReflection;

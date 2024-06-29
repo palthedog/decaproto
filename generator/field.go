@@ -103,7 +103,8 @@ func isPrimitiveType(f *descriptor.FieldDescriptorProto) bool {
 		descriptor.FieldDescriptorProto_TYPE_FIXED32,
 		descriptor.FieldDescriptorProto_TYPE_DOUBLE,
 		descriptor.FieldDescriptorProto_TYPE_FLOAT,
-		descriptor.FieldDescriptorProto_TYPE_BOOL:
+		descriptor.FieldDescriptorProto_TYPE_BOOL,
+		descriptor.FieldDescriptorProto_TYPE_STRING:
 		return true
 	}
 	return false
