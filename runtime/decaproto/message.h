@@ -15,7 +15,7 @@ public:
     virtual ~Message() {
     }
 
-    virtual const MessageDescriptor* GetDescriptor() const = 0;
+    virtual const Descriptor* GetDescriptor() const = 0;
     virtual const Reflection* GetReflection() const = 0;
 };
 

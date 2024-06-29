@@ -29,27 +29,72 @@ func parseReq(r io.Reader) (*plugin.CodeGeneratorRequest, error) {
 }
 
 func processEnum(ctx *Context, m *descriptor.EnumDescriptorProto) {
-	var out string = ""
-
 	ctx.pushPackage(m.GetName())
 
+	var out string = ""
 	full_name := strings.Join(ctx.cpp_nested_pkg, "_")
 	out += "enum " + full_name + " {\n"
 	for _, field := range m.GetValue() {
 		out += fmt.Sprintf("    %s = %d,\n", field.GetName(), field.GetNumber())
 	}
 	out += "};\n\n"
+	ctx.printer.enum_definitions += out
 
 	ctx.popPackage()
+}
 
-	ctx.printer.enum_definitions += out
+func printReflection(fp *FilePrinter, mp *MessagePrinter) {
+	// Declaration
+	mp.publics += "    const decaproto::Reflection* GetReflection() const override;\n"
+
+	// Definition
+	var src string = ""
+	src += "const decaproto::Reflection* " + mp.full_name + "::GetReflection() const {\n"
+	src += "    // TODO: Implement me\n"
+	src += "    return nullptr;\n"
+	src += "}\n"
+
+	fp.source_content += src
+}
+
+func printDescriptor(m *descriptor.DescriptorProto, fp *FilePrinter, mp *MessagePrinter) {
+	// Declaration
+	mp.publics += "    const decaproto::Descriptor* GetDescriptor() const override;\n"
+
+	// Definition
+	var desc_name = "k" + mp.full_name + "_Descriptor"
+	var src string = ""
+	src += "\n"
+	src += "// A singleton Descriptor for " + mp.full_name + "\n"
+	src += "decaproto::Descriptor* " + desc_name + " = nullptr;\n"
+	src += "\n"
+	src += "const decaproto::Descriptor* " + mp.full_name + "::GetDescriptor() const {\n"
+	src += "    if (" + desc_name + " != nullptr) {\n"
+	src += "        return " + desc_name + ";\n"
+	src += "    }\n"
+	src += "    " + desc_name + " = new decaproto::Descriptor();\n"
+	for _, f := range m.GetField() {
+		tag := f.GetNumber()
+		field_type := getCppFieldType(f.GetType())
+		src += "    "
+		src += fmt.Sprintf("%s->AddField(decaproto::FieldDescriptor(%d, %s));\n",
+			desc_name,
+			tag,
+			field_type)
+	}
+	src += "    return " + desc_name + ";\n"
+	src += "}\n"
+
+	fp.source_content += src
 }
 
 func processMessage(ctx *Context, m *descriptor.DescriptorProto) {
-	msg_printer := NewMessagePrinter()
-
-	msg_printer.short_name = m.GetName()
 	ctx.pushPackage(m.GetName())
+
+	msg_printer := NewMessagePrinter()
+	msg_printer.short_name = m.GetName()
+	full_name := strings.Join(ctx.cpp_nested_pkg, "_")
+	msg_printer.full_name = full_name
 
 	// nested messages
 	for _, nested := range m.GetNestedType() {
@@ -60,44 +105,48 @@ func processMessage(ctx *Context, m *descriptor.DescriptorProto) {
 		processEnum(ctx, nested)
 	}
 
-	full_name := strings.Join(ctx.cpp_nested_pkg, "_")
-	msg_printer.full_name = full_name
+	// Define alias for nested messages like:
+	// `typedef MyPackage_Nested_MyMessage MyMessage;`
+	// so that we can refer to them as `Nested::MyMessage` instead of `MyPackage_Nested_MyMessage`
+	for _, nested := range m.GetNestedType() {
+		nest_full_name := full_name + "_" + nested.GetName()
+		nest_short_name := nested.GetName()
+		msg_printer.publics += "    typedef " + nest_full_name + " " + nest_short_name + ";\n"
+	}
+	// Aliases for nested enums
+	for _, nested := range m.GetEnumType() {
+		nest_full_name := full_name + "_" + nested.GetName()
+		nest_short_name := nested.GetName()
+		msg_printer.publics += "    typedef " + nest_full_name + " " + nest_short_name + ";\n"
+	}
 
-	ctx.printer.prototype_declarations += "class " + msg_printer.full_name + ";\n"
+	ctx.printer.prototype_declarations += "class " + full_name + ";\n"
 
 	for _, field := range m.GetField() {
 		processField(ctx, msg_printer, field)
 	}
+	printDescriptor(m, ctx.printer, msg_printer)
+	printReflection(ctx.printer, msg_printer)
 
-	var out string = ""
-
-	out += "class " + full_name + " {\n"
-	out += "public:\n"
-	// typedef nested messages
-	for _, nested := range m.GetNestedType() {
-		nest_full_name := full_name + "_" + nested.GetName()
-		nest_short_name := nested.GetName()
-		out += "    typedef " + nest_full_name + " " + nest_short_name + ";\n"
-	}
-	// typedef nested enums
-	for _, nested := range m.GetEnumType() {
-		nest_full_name := full_name + "_" + nested.GetName()
-		nest_short_name := nested.GetName()
-		out += "    typedef " + nest_full_name + " " + nest_short_name + ";\n"
-	}
-	out += "private:\n"
-	out += msg_printer.privates
-	out += "\n"
-	out += "public:\n"
-	out += "    " + full_name + "() {};\n"
-	out += "    ~" + full_name + "() {};\n"
-	out += "\n"
-	out += msg_printer.publics
-	out += "\n};\n\n"
-
-	ctx.printer.definitions += out
+	ctx.printer.definitions += msg_printer.printClassDefinition()
 
 	ctx.popPackage()
+}
+
+func (mp *MessagePrinter) printClassDefinition() string {
+	var out string = ""
+	out += "class " + mp.full_name + " : public decaproto::Message {\n"
+	out += "public:\n"
+	out += "    " + mp.full_name + "() {}\n"
+	out += "    virtual ~" + mp.full_name + "() {}\n"
+	out += "\n"
+	out += mp.publics
+	out += "\n"
+	out += "private:\n"
+	out += mp.privates
+	out += "\n"
+	out += "\n};\n\n"
+	return out
 }
 
 func outputName(f *descriptor.FileDescriptorProto) string {
@@ -129,20 +178,36 @@ func (ctx *Context) popPackage() {
 	ctx.cpp_nested_pkg = ctx.cpp_nested_pkg[:len(ctx.cpp_nested_pkg)-1]
 }
 
+type DescriptorPrinter struct {
+	tags       []int32
+	type_names []string
+}
+
+func NewDescriptorPrinter() *DescriptorPrinter {
+	return &DescriptorPrinter{
+		tags:       []int32{},
+		type_names: []string{},
+	}
+}
+
 type MessagePrinter struct {
 	short_name string // MyMessage
 	full_name  string // ::MyPackage::Nested::MyMessage
 
 	privates string
 	publics  string
+
+	// TODO: We need one descriptor pinters per message
+	descriptor_printer *DescriptorPrinter
 }
 
 func NewMessagePrinter() *MessagePrinter {
 	return &MessagePrinter{
-		short_name: "",
-		full_name:  "",
-		privates:   "",
-		publics:    "",
+		short_name:         "",
+		full_name:          "",
+		privates:           "",
+		publics:            "",
+		descriptor_printer: NewDescriptorPrinter(),
 	}
 }
 
@@ -162,6 +227,8 @@ type FilePrinter struct {
 	enum_definitions string
 
 	definitions string
+
+	source_content string
 }
 
 func NewFilePrinter() *FilePrinter {
@@ -170,6 +237,7 @@ func NewFilePrinter() *FilePrinter {
 		prototype_declarations: "",
 		enum_definitions:       "",
 		definitions:            "",
+		source_content:         "",
 	}
 }
 
@@ -182,8 +250,8 @@ func (fp *FilePrinter) printIncludes() string {
 	return strings.Join(keys, "\n") + "\n"
 }
 
-func (fp *FilePrinter) printFile() string {
-	var content string = ""
+func (fp *FilePrinter) printHeaderFile() string {
+	var content string = "#pragma once\n\n"
 
 	content += fp.printIncludes()
 	content += "\n"
@@ -200,6 +268,10 @@ func (fp *FilePrinter) printFile() string {
 	return content
 }
 
+func (fp *FilePrinter) printSourceFile() string {
+	return ""
+}
+
 func processReq(req *plugin.CodeGeneratorRequest) *plugin.CodeGeneratorResponse {
 	// Build a map of file names to file descriptors.
 	files := make(map[string]*descriptor.FileDescriptorProto)
@@ -211,6 +283,7 @@ func processReq(req *plugin.CodeGeneratorRequest) *plugin.CodeGeneratorResponse 
 	for _, fname := range req.FileToGenerate {
 		f := files[fname]
 		out_file_name := outputName(f)
+		header_file_name := out_file_name + ".h"
 
 		ctx := NewContext()
 
@@ -218,6 +291,12 @@ func processReq(req *plugin.CodeGeneratorRequest) *plugin.CodeGeneratorResponse 
 		ctx.printer.addInclude("#include <stdint.h>")
 		ctx.printer.addInclude("#include <string>")
 		ctx.printer.addInclude("#include <vector>")
+		ctx.printer.addInclude("#include \"decaproto/message.h\"")
+		ctx.printer.addInclude("#include \"decaproto/descriptor.h\"")
+		ctx.printer.addInclude("#include \"decaproto/reflection.h\"")
+
+		ctx.printer.source_content += "#include \"" + header_file_name + "\"\n"
+		ctx.printer.source_content += "\n"
 
 		for _, enm := range f.EnumType {
 			processEnum(ctx, enm)
@@ -227,7 +306,7 @@ func processReq(req *plugin.CodeGeneratorRequest) *plugin.CodeGeneratorResponse 
 			processMessage(ctx, message)
 		}
 
-		content := ctx.printer.printFile()
+		content := ctx.printer.printHeaderFile()
 
 		// Dump all descriptors for reference
 		content += "/*\n"
@@ -235,13 +314,13 @@ func processReq(req *plugin.CodeGeneratorRequest) *plugin.CodeGeneratorResponse 
 		content += "*/\n"
 
 		resp.File = append(resp.File, &plugin.CodeGeneratorResponse_File{
-			Name:    proto.String(out_file_name + ".h"),
+			Name:    proto.String(header_file_name),
 			Content: proto.String(content),
 		})
 
 		resp.File = append(resp.File, &plugin.CodeGeneratorResponse_File{
 			Name:    proto.String(out_file_name + ".cc"),
-			Content: proto.String("#include \"" + out_file_name + ".h\"\n"),
+			Content: proto.String(ctx.printer.source_content),
 		})
 	}
 	return &resp

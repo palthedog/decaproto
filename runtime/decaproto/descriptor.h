@@ -78,14 +78,14 @@ public:
     }
 };
 
-class MessageDescriptor {
+class Descriptor {
     std::vector<FieldDescriptor> fields_;
 
 public:
-    MessageDescriptor() {
+    Descriptor() {
     }
 
-    ~MessageDescriptor() {
+    ~Descriptor() {
     }
 
     void AddField(const FieldDescriptor& field) {

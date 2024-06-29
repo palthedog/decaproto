@@ -17,6 +17,25 @@ var primitive_name_map = map[descriptor.FieldDescriptorProto_Type]string{
 	descriptor.FieldDescriptorProto_TYPE_BOOL:   "bool",
 }
 
+var go_desc_type_to_cpp_desc_type = map[descriptor.FieldDescriptorProto_Type]string{
+	descriptor.FieldDescriptorProto_TYPE_INT64:   "FieldType::kUint64",
+	descriptor.FieldDescriptorProto_TYPE_INT32:   "FieldType::kInt32",
+	descriptor.FieldDescriptorProto_TYPE_DOUBLE:  "FieldType::kDouble",
+	descriptor.FieldDescriptorProto_TYPE_FLOAT:   "FieldType::kFloat",
+	descriptor.FieldDescriptorProto_TYPE_BOOL:    "FieldType::kBool",
+	descriptor.FieldDescriptorProto_TYPE_STRING:  "FieldType::kString",
+	descriptor.FieldDescriptorProto_TYPE_MESSAGE: "FieldType::kMessage",
+	descriptor.FieldDescriptorProto_TYPE_ENUM:    "FieldType::kEnum",
+}
+
+func getCppFieldType(typ descriptor.FieldDescriptorProto_Type) string {
+	type_name, ok := go_desc_type_to_cpp_desc_type[typ]
+	if !ok {
+		log.Fatal("Unsupported field type", typ)
+	}
+	return "decaproto::" + type_name
+}
+
 func protoMessageTypeToCppType(f *descriptor.FieldDescriptorProto) string {
 	cpp_name, ok := primitive_name_map[f.GetType()]
 	if ok {
@@ -87,7 +106,7 @@ func addPrimitiveField(f *descriptor.FieldDescriptorProto, cpp_type string, msg_
 	{{.cpp_type}} {{.pri_name}};
 	bool has_{{.pri_name}};
 
- `
+`
 
 	const pub_template = `
 	inline {{.cpp_type}} {{.f_name}}() const {
@@ -109,7 +128,7 @@ func addPrimitiveField(f *descriptor.FieldDescriptorProto, cpp_type string, msg_
 	    has_{{.pri_name}} = false;
 	}
 
- `
+`
 
 	pri_tpl, err := template.New("pri").Parse(pri_template)
 	if err != nil {
@@ -142,7 +161,7 @@ func addStringField(f *descriptor.FieldDescriptorProto, cpp_type string, msg_pri
 	{{.cpp_type}} {{.pri_name}};
 	bool has_{{.pri_name}};
 
- `
+`
 
 	const pub_template = `
 	inline {{.cpp_type}} {{.f_name}}() const {
@@ -165,7 +184,7 @@ func addStringField(f *descriptor.FieldDescriptorProto, cpp_type string, msg_pri
 	    has_{{.pri_name}} = false;
 	}
 
- `
+`
 
 	pri_tpl, err := template.New("pri").Parse(pri_template)
 	if err != nil {
@@ -197,7 +216,7 @@ func addRepeatedPrimitiveField(f *descriptor.FieldDescriptorProto, cpp_type stri
 	const pri_template = `
 	std::vector<{{.cpp_type}}> {{.pri_name}};
 
- `
+`
 	const pub_template = `
 	inline const std::vector<{{.cpp_type}}>& {{.f_name}}() const {
 	    return {{.pri_name}};
@@ -211,7 +230,7 @@ func addRepeatedPrimitiveField(f *descriptor.FieldDescriptorProto, cpp_type stri
 	    {{.pri_name}}.clear();
 	}
 
- `
+`
 
 	pri_tpl, err := template.New("pri").Parse(pri_template)
 	if err != nil {

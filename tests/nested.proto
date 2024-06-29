@@ -1,43 +1,17 @@
 syntax = "proto3";
-/*
-enum EnumMessage {
-  ENUM_UNKNOWN = 0;
-  ENUM_A = 1;
-  ENUM_B = 2;
-  ENUM_C = 3;
-}
 
-message OtherMessage {
+message OuterMessage {
   enum NestedEnumMessage {
     N_ENUM_UNKNOWN = 0;
     N_ENUM_A = 1;
     N_ENUM_B = 2;
   }
 
-  int32 num = 1;
-
-  EnumMessage enum_message = 2;
-  oneof oneof_message {
-    string str_a = 3;
-    int32 num_b = 4;
-    double double_c = 5;
-  }
-
-  NestedEnumMessage nested_enum_message = 6;
-}
-
-message SimpleMessage {
-  int32 number = 1;
-  string str = 2;
-
-  OtherMessage other = 3;
-
-  repeated string strs = 4;
-
   message NestedMessage {
     int32 num = 1;
   }
-  NestedMessage nested_message = 5;
-}
 
-*/
+  int32 num = 1;
+  NestedMessage nested_message = 2;
+  NestedEnumMessage nested_enum_message = 3;
+}

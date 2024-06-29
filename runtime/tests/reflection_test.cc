@@ -10,7 +10,7 @@
 using namespace decaproto;
 using namespace std;
 
-MessageDescriptor* kTestDescriptor = nullptr;
+Descriptor* kTestDescriptor = nullptr;
 Reflection* kTestReflection = nullptr;
 
 class TestReflection;
@@ -44,13 +44,13 @@ public:
         return str_;
     }
 
-    const MessageDescriptor* GetDescriptor() const override {
+    const Descriptor* GetDescriptor() const override {
         if (kTestDescriptor != nullptr) {
             return kTestDescriptor;
         }
 
-        // MessageDescriptor which represents this Message.
-        kTestDescriptor = new MessageDescriptor();
+        // Descriptor which represents this Message.
+        kTestDescriptor = new Descriptor();
         kTestDescriptor->AddField(FieldDescriptor(kNumTag, FieldType::kUint32));
         kTestDescriptor->AddField(FieldDescriptor(kStrTag, FieldType::kString));
         return kTestDescriptor;
@@ -103,7 +103,7 @@ const Reflection* ReflectionTestMessage::GetReflection() const {
 
 TEST(ReflectionTest, SimpleTest) {
     ReflectionTestMessage m;
-    const MessageDescriptor* descriptor = m.GetDescriptor();
+    const Descriptor* descriptor = m.GetDescriptor();
     const Reflection* reflection = m.GetReflection();
 
     // Note that the order of fields in the descriptor is not guaranteed.
