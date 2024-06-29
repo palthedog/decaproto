@@ -16,24 +16,33 @@ class Reflection {
     template <typename T>
     using SetterFn = std::function<void(Message*, T)>;
 
-#define DECL_ACCESSOR_IMPL(cc_arg_type, CcType) \
+#define DEFINE_FOR(cc_arg_type, CcType) \
     std::map<uint32_t, SetterFn<cc_arg_type>> set_##CcType##_impls_;
 
-    DECL_ACCESSOR_IMPL(uint32_t, UInt32)
-    DECL_ACCESSOR_IMPL(int32_t, Int32)
-    DECL_ACCESSOR_IMPL(const std::string&, String)
+    // This is the expanded version of the above macro for reference.
+    // std::map<uint32_t, SetterFn<uint32_t>> set_UInt32_impls_;
 
-#undef DECL_ACCESSOR_IMPL
+    DEFINE_FOR(uint64_t, UInt64)
+    DEFINE_FOR(int64_t, Int64)
+    DEFINE_FOR(uint32_t, UInt32)
+    DEFINE_FOR(int32_t, Int32)
+    DEFINE_FOR(double, Double)
+    DEFINE_FOR(float, Float)
+    DEFINE_FOR(bool, Bool)
+    DEFINE_FOR(const std::string&, String)
+
+#undef DEFINE_FOR
 
 public:
     Reflection() {
     }
+
     ~Reflection() {
     }
 
     // Allows the code generator to register setter/getter for the given field.
     // Internal use only.
-#define DEF_FIELD_REGISTER(cc_arg_type, CcType)                              \
+#define DEFINE_FOR(cc_arg_type, CcType)                                      \
     void Register##CcType##Field(                                            \
         const FieldDescriptor& field, const SetterFn<cc_arg_type>& setter) { \
         uint32_t tag = field.GetTag();                                       \
@@ -50,13 +59,22 @@ public:
     }
     */
 
-    DEF_FIELD_REGISTER(uint32_t, UInt32)
-    DEF_FIELD_REGISTER(int32_t, Int32)
-    DEF_FIELD_REGISTER(const std::string&, String)
+    DEFINE_FOR(uint64_t, UInt64)
+    DEFINE_FOR(int64_t, Int64)
+    DEFINE_FOR(uint32_t, UInt32)
+    DEFINE_FOR(int32_t, Int32)
+    DEFINE_FOR(double, Double)
+    DEFINE_FOR(float, Float)
+    DEFINE_FOR(bool, Bool)
+    DEFINE_FOR(const std::string&, String)
 
-#undef DEF_FIELD_REGISTER
+#undef DEFINE_FOR
 
-#define DEF_SETTER(cc_arg_type, CcType)                                    \
+    // Define setters.
+    // Don't try to share a macro to generate both setter/getter and similars.
+    // We prefer readability rather than writability.
+
+#define DEFINE_FOR(cc_arg_type, CcType)                                    \
     void Set##CcType(                                                      \
         Message* message, const FieldDescriptor* field, cc_arg_type value) \
         const {                                                            \
@@ -65,11 +83,16 @@ public:
         it->second(message, value);                                        \
     }
 
-    DEF_SETTER(uint32_t, UInt32)
-    DEF_SETTER(int32_t, Int32)
-    DEF_SETTER(const std::string&, String)
+    DEFINE_FOR(uint64_t, UInt64)
+    DEFINE_FOR(int64_t, Int64)
+    DEFINE_FOR(uint32_t, UInt32)
+    DEFINE_FOR(int32_t, Int32)
+    DEFINE_FOR(double, Double)
+    DEFINE_FOR(float, Float)
+    DEFINE_FOR(bool, Bool)
+    DEFINE_FOR(const std::string&, String)
 
-#undef DEF_SETTER
+#undef DEFINE_FOR
 
     /*
         void SetUInt32(
