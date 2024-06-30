@@ -117,6 +117,14 @@ public:
         return has_enum_field_;
     }
 
+    const std::vector<uint32_t>& rep_nums() const {
+        return rep_nums_;
+    }
+
+    std::vector<uint32_t>* mutable_rep_nums() {
+        return &rep_nums_;
+    }
+
     const Descriptor* GetDescriptor() const override {
         if (kTestDescriptor != nullptr) {
             return kTestDescriptor;
@@ -145,31 +153,38 @@ public:
         // Descriptor which produces dynamic ways to access the message
         kTestReflection = new Reflection();
 
-        // uint32 num = 1
+        // uint32 num = 0
         kTestReflection->RegisterSetUInt32(
                 kNumTag, MsgCast(&ReflectionTestMessage::set_num));
         kTestReflection->RegisterGetUInt32(
                 kNumTag, MsgCast(&ReflectionTestMessage::num));
 
-        // string str = 2
+        // string str = 1
         kTestReflection->RegisterSetString(
                 kStrTag, MsgCast(&ReflectionTestMessage::set_str));
         kTestReflection->RegisterGetString(
                 kStrTag, MsgCast(&ReflectionTestMessage::str));
 
-        // OtherMessage other = 3
+        // OtherMessage other = 2
         kTestReflection->RegisterMutableMessage(
                 kOtherTag, MsgCast(&ReflectionTestMessage::mutable_other));
         kTestReflection->RegisterGetMessage(
                 kOtherTag, MsgCast(&ReflectionTestMessage::other));
 
-        // TestEnum enum_field = 4
+        // TestEnum enum_field = 3
         kTestReflection->RegisterSetEnumValue(
                 kEnumFieldTag,
                 CastForSetEnumValue(&ReflectionTestMessage::set_enum_field));
         kTestReflection->RegisterGetEnumValue(
                 kEnumFieldTag,
                 CastForGetEnumValue(&ReflectionTestMessage::enum_field));
+
+        // repeated uint32 rep_nums = 4
+        kTestReflection->RegisterGetRepeatedUInt32(
+                kRepNumsTag, MsgCast(&ReflectionTestMessage::rep_nums));
+        kTestReflection->RegisterMutableRepeatedUInt32(
+                kRepNumsTag, MsgCast(&ReflectionTestMessage::mutable_rep_nums));
+
         return kTestReflection;
     }
 };
@@ -265,30 +280,43 @@ TEST(ReflectionTest, GetEnumValueTest) {
     EXPECT_EQ(TestEnum::ENUM_C, (TestEnum)enum_value);
 }
 
-/*
-TEST_F(ReflectionTest, GetRepeatedFieldTest) {
+TEST(ReflectionTest, GetRepeatedFieldTest) {
     ReflectionTestMessage m;
-    const Descriptor* descriptor = m.GetDescriptor();
     const Reflection* reflection = m.GetReflection();
+
+    EXPECT_EQ(0, m.rep_nums().size());
 
     // Assuming reflection methods to add and get repeated fields exist
     // Add elements through reflection
-    reflection->AddRepeatedUint32Field(&message, kRepNumsTag, 10);
-    reflection->AddRepeatedUint32Field(&message, kRepNumsTag, 20);
-    reflection->AddRepeatedUint32Field(&message, kRepNumsTag, 30);
+    m.mutable_rep_nums()->push_back(10);
+    m.mutable_rep_nums()->push_back(20);
+    m.mutable_rep_nums()->push_back(30);
+
+    EXPECT_EQ(3, m.rep_nums().size());
 
     // Get and test elements through reflection
-    EXPECT_EQ(
-            message.GetReflection()->GetRepeatedUint32Field(
-                    message, kRepNumsTag, 0),
-            10);
-    EXPECT_EQ(
-            message.GetReflection()->GetRepeatedUint32Field(
-                    message, kRepNumsTag, 1),
-            20);
-    EXPECT_EQ(
-            message.GetReflection()->GetRepeatedUint32Field(
-                    message, kRepNumsTag, 2),
-            30);
+    const vector<uint32_t>& nums =
+            reflection->GetRepeatedUInt32(&m, kRepNumsTag);
+    EXPECT_EQ(3, nums.size());
+    EXPECT_EQ(10, nums[0]);
+    EXPECT_EQ(20, nums[1]);
+    EXPECT_EQ(30, nums[2]);
 }
-*/
+
+TEST(ReflectionTest, SetRepeatedFieldTest) {
+    ReflectionTestMessage m;
+    const Reflection* reflection = m.GetReflection();
+
+    EXPECT_EQ(0, m.rep_nums().size());
+
+    // Push values through reflection
+    vector<uint32_t>* nums = reflection->MutableRepeatedUInt32(&m, kRepNumsTag);
+    nums->push_back(10);
+    nums->push_back(20);
+    nums->push_back(30);
+
+    EXPECT_EQ(3, m.rep_nums().size());
+    EXPECT_EQ(10, m.rep_nums()[0]);
+    EXPECT_EQ(20, m.rep_nums()[1]);
+    EXPECT_EQ(30, m.rep_nums()[2]);
+}

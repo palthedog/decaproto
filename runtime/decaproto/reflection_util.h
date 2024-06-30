@@ -12,7 +12,11 @@ namespace decaproto {
 template <typename Ret, typename SubMsg, typename... Args>
 static std::function<Ret(Message*, Args...)> MsgCast(
         Ret (SubMsg::*method_ptr)(Args...)) {
-    return [=](Message* base_message, Args... args) {
+    // We must specify the return type `-> Ret` to make sure that the
+    // lambda function returns method_ptr's return type AS IS.
+    // Like, even if `Ret = const vector<int>&`, the compiler would
+    // drop reference "&" from the return type.
+    return [=](Message* base_message, Args... args) -> Ret {
         SubMsg* message = static_cast<SubMsg*>(base_message);
         return (message->*method_ptr)(args...);
     };
@@ -24,7 +28,11 @@ static std::function<Ret(Message*, Args...)> MsgCast(
 template <typename Ret, typename SubMsg, typename... Args>
 static std::function<Ret(const Message*, Args...)> MsgCast(
         Ret (SubMsg::*method_ptr)(Args...) const) {
-    return [=](const Message* base_message, Args... args) {
+    // We must specify the return type `-> Ret` to make sure that the
+    // lambda function returns method_ptr's return type AS IS.
+    // Like, even if `Ret = const vector<int>&`, the compiler would
+    // drop reference "&" from the return type.
+    return [=](const Message* base_message, Args... args) -> Ret {
         const SubMsg* message = static_cast<const SubMsg*>(base_message);
         return (message->*method_ptr)(args...);
     };
@@ -50,7 +58,7 @@ static std::function<int(const Message*)> CastForGetEnumValue(
         FieldEnumType (SubMsg::*method_ptr)() const) {
     // Getters for Enum fields returns Enum type.
     // We need to cast the EnumType into int for GetEnumValue.
-    return [=](const Message* base_message) {
+    return [=](const Message* base_message) -> int {
         const SubMsg* message = static_cast<const SubMsg*>(base_message);
         return static_cast<int>((message->*method_ptr)());
     };

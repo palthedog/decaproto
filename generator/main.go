@@ -66,8 +66,23 @@ func printReflection(m *descriptor.DescriptorProto, fp *FilePrinter, mp *Message
 		type_name := getTypeNameInfo(f)
 		tag_str := fmt.Sprintf("%d", f.GetNumber())
 		if f.GetLabel() == descriptor.FieldDescriptorProto_LABEL_REPEATED {
-			// TODO: Support repeated fields
-			continue
+			src += print("reg_msg_field", `
+			// Mutable getter
+			{{.singleton_name}}->RegisterMutableMessage(
+				{{.tag}},
+				decaproto::MsgCast(&{{.msg_full_name}}::mutable_{{.field_name}}));
+			// Getter
+			{{.singleton_name}}->RegisterGetMessage(
+				{{.tag}},
+				decaproto::MsgCast(&{{.msg_full_name}}::{{.field_name}}));
+			`,
+				map[string]string{
+					"singleton_name": singleton_name,
+					"tag":            tag_str,
+					"cc_arg_type":    type_name.cc_arg_type,
+					"msg_full_name":  msg_full_name,
+					"field_name":     f.GetName(),
+				})
 		}
 
 		if f.GetType() == descriptor.FieldDescriptorProto_TYPE_MESSAGE {
