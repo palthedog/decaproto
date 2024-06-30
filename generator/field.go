@@ -84,16 +84,47 @@ var type_name_infos_map = map[descriptor.FieldDescriptorProto_Type]TypeNameInfo{
 	descriptor.FieldDescriptorProto_TYPE_STRING:  NewObjectTypeNameInfo("string", "kString", "std::string", "String"),
 
 	descriptor.FieldDescriptorProto_TYPE_MESSAGE: NewGeneratedTypeNameInfo("kMessage", "Message"),
-	descriptor.FieldDescriptorProto_TYPE_ENUM:    NewGeneratedTypeNameInfo("kEnum", "Enum"),
+	// We use "EnumValue" because cc_camel_name is used only for the getter/setter in Reflection
+	// and our Reflection interface provides only enum accessors via EnumValue(i.e. int)
+	descriptor.FieldDescriptorProto_TYPE_ENUM: NewGeneratedTypeNameInfo("kEnum", "EnumValue"),
+}
+
+func getTypeNameInfoBase(f *descriptor.FieldDescriptorProto) TypeNameInfo {
+	switch f.GetType() {
+	case descriptor.FieldDescriptorProto_TYPE_UINT64:
+		return NewPrimitiveTypeNameInfo("uint64", "kUInt64", "uint64_t", "UInt64")
+	case descriptor.FieldDescriptorProto_TYPE_INT64:
+		return NewPrimitiveTypeNameInfo("int64", "kInt64", "int64_t", "Int64")
+	case descriptor.FieldDescriptorProto_TYPE_FIXED64:
+		return NewPrimitiveTypeNameInfo("fixed64", "kFixed64", "uint64_t", "UInt64")
+	case descriptor.FieldDescriptorProto_TYPE_UINT32:
+		return NewPrimitiveTypeNameInfo("uint32", "kUInt32", "uint32_t", "UInt32")
+	case descriptor.FieldDescriptorProto_TYPE_INT32:
+		return NewPrimitiveTypeNameInfo("int32", "kInt32", "int32_t", "Int32")
+	case descriptor.FieldDescriptorProto_TYPE_FIXED32:
+		return NewPrimitiveTypeNameInfo("fixed32", "kFixed32", "uint32_t", "UInt32")
+	case descriptor.FieldDescriptorProto_TYPE_DOUBLE:
+		return NewPrimitiveTypeNameInfo("double", "kDouble", "double", "Double")
+	case descriptor.FieldDescriptorProto_TYPE_FLOAT:
+		return NewPrimitiveTypeNameInfo("float", "kFloat", "float", "Float")
+	case descriptor.FieldDescriptorProto_TYPE_BOOL:
+		return NewPrimitiveTypeNameInfo("bool", "kBool", "bool", "Bool")
+	case descriptor.FieldDescriptorProto_TYPE_STRING:
+		return NewObjectTypeNameInfo("string", "kString", "std::string", "String")
+	case descriptor.FieldDescriptorProto_TYPE_MESSAGE:
+		return NewGeneratedTypeNameInfo("kMessage", "Message")
+	// We use "EnumValue" because cc_camel_name is used only for the getter/setter in Reflection
+	// and our Reflection interface provides only enum accessors via EnumValue(i.e. int)
+	case descriptor.FieldDescriptorProto_TYPE_ENUM:
+		return NewGeneratedTypeNameInfo("kEnum", "EnumValue")
+	}
+
+	log.Fatal("Unsupported field type to get TypeNameInfo", f.GetType(), f.GetName())
+	return TypeNameInfo{}
 }
 
 func getTypeNameInfo(f *descriptor.FieldDescriptorProto) TypeNameInfo {
-	info, ok := type_name_infos_map[f.GetType()]
-	if !ok {
-		// we can create TypeInfoName struct here for messages
-		log.Fatal("Unsupported field type", f.GetType(), f.GetName())
-	}
-
+	info := getTypeNameInfoBase(f)
 	if f.GetType() == descriptor.FieldDescriptorProto_TYPE_MESSAGE {
 		// .OtherMessage
 		// .OuterMessage.NestedMessage
@@ -116,6 +147,13 @@ func getTypeNameInfo(f *descriptor.FieldDescriptorProto) TypeNameInfo {
 		info.cc_raw_type = cc_raw_type
 		info.cc_arg_type = cc_raw_type
 		info.cc_ret_type = cc_raw_type
+	}
+
+	if f.GetLabel() == descriptor.FieldDescriptorProto_LABEL_REPEATED {
+		info.cc_raw_type = "std::vector<" + info.cc_raw_type + ">"
+		info.cc_ret_type = "const std::vector<" + info.cc_ret_type + ">&"
+		info.cc_arg_type = "const std::vector<" + info.cc_arg_type + ">&"
+		info.cc_camel_name = "Repeated" + info.cc_camel_name
 	}
 
 	return info
@@ -292,15 +330,15 @@ func addStringField(f *descriptor.FieldDescriptorProto, cpp_type string, msg_pri
 
 func addRepeatedPrimitiveField(f *descriptor.FieldDescriptorProto, cpp_type string, msg_printer *MessagePrinter) {
 	const pri_template = `
-	std::vector<{{.cpp_type}}> {{.pri_name}};
+	{{.cpp_type}} {{.pri_name}};
 
 `
 	const pub_template = `
-	inline const std::vector<{{.cpp_type}}>& {{.f_name}}() const {
+	inline const {{.cpp_type}}& {{.f_name}}() const {
 	    return {{.pri_name}};
 	}
 
-	inline std::vector<{{.cpp_type}}>* mutable_{{.f_name}}() {
+	inline {{.cpp_type}}* mutable_{{.f_name}}() {
 		return &{{.pri_name}};
 	}
 
