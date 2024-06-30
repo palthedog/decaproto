@@ -71,24 +71,6 @@ func NewGeneratedTypeNameInfo(deca_enum_name, cc_camel_name string) TypeNameInfo
 	}
 }
 
-var type_name_infos_map = map[descriptor.FieldDescriptorProto_Type]TypeNameInfo{
-	descriptor.FieldDescriptorProto_TYPE_UINT64:  NewPrimitiveTypeNameInfo("uint64", "kUInt64", "uint64_t", "UInt64"),
-	descriptor.FieldDescriptorProto_TYPE_INT64:   NewPrimitiveTypeNameInfo("int64", "kInt64", "int64_t", "Int64"),
-	descriptor.FieldDescriptorProto_TYPE_FIXED64: NewPrimitiveTypeNameInfo("fixed64", "kFixed64", "uint64_t", "UInt64"),
-	descriptor.FieldDescriptorProto_TYPE_UINT32:  NewPrimitiveTypeNameInfo("uint32", "kUInt32", "uint32_t", "UInt32"),
-	descriptor.FieldDescriptorProto_TYPE_INT32:   NewPrimitiveTypeNameInfo("int32", "kInt32", "int32_t", "Int32"),
-	descriptor.FieldDescriptorProto_TYPE_FIXED32: NewPrimitiveTypeNameInfo("fixed32", "kFixed32", "uint32_t", "UInt32"),
-	descriptor.FieldDescriptorProto_TYPE_DOUBLE:  NewPrimitiveTypeNameInfo("double", "kDouble", "double", "Double"),
-	descriptor.FieldDescriptorProto_TYPE_FLOAT:   NewPrimitiveTypeNameInfo("float", "kFloat", "float", "Float"),
-	descriptor.FieldDescriptorProto_TYPE_BOOL:    NewPrimitiveTypeNameInfo("bool", "kBool", "bool", "Bool"),
-	descriptor.FieldDescriptorProto_TYPE_STRING:  NewObjectTypeNameInfo("string", "kString", "std::string", "String"),
-
-	descriptor.FieldDescriptorProto_TYPE_MESSAGE: NewGeneratedTypeNameInfo("kMessage", "Message"),
-	// We use "EnumValue" because cc_camel_name is used only for the getter/setter in Reflection
-	// and our Reflection interface provides only enum accessors via EnumValue(i.e. int)
-	descriptor.FieldDescriptorProto_TYPE_ENUM: NewGeneratedTypeNameInfo("kEnum", "EnumValue"),
-}
-
 func getTypeNameInfoBase(f *descriptor.FieldDescriptorProto) TypeNameInfo {
 	switch f.GetType() {
 	case descriptor.FieldDescriptorProto_TYPE_UINT64:
