@@ -175,7 +175,7 @@ public:
 };
 
 const FieldDescriptor& FindFieldDescriptor(
-        const Descriptor* descriptor, int tag) {
+        const Descriptor* descriptor, uint32_t tag) {
     return *std::find_if(
             descriptor->GetFields().begin(),
             descriptor->GetFields().end(),
@@ -264,3 +264,31 @@ TEST(ReflectionTest, GetEnumValueTest) {
 
     EXPECT_EQ(TestEnum::ENUM_C, (TestEnum)enum_value);
 }
+
+/*
+TEST_F(ReflectionTest, GetRepeatedFieldTest) {
+    ReflectionTestMessage m;
+    const Descriptor* descriptor = m.GetDescriptor();
+    const Reflection* reflection = m.GetReflection();
+
+    // Assuming reflection methods to add and get repeated fields exist
+    // Add elements through reflection
+    reflection->AddRepeatedUint32Field(&message, kRepNumsTag, 10);
+    reflection->AddRepeatedUint32Field(&message, kRepNumsTag, 20);
+    reflection->AddRepeatedUint32Field(&message, kRepNumsTag, 30);
+
+    // Get and test elements through reflection
+    EXPECT_EQ(
+            message.GetReflection()->GetRepeatedUint32Field(
+                    message, kRepNumsTag, 0),
+            10);
+    EXPECT_EQ(
+            message.GetReflection()->GetRepeatedUint32Field(
+                    message, kRepNumsTag, 1),
+            20);
+    EXPECT_EQ(
+            message.GetReflection()->GetRepeatedUint32Field(
+                    message, kRepNumsTag, 2),
+            30);
+}
+*/
