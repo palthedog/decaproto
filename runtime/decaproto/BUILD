@@ -4,6 +4,7 @@ cc_library(
         "descriptor.h",
         "message.h",
         "reflection.h",
+        "reflection_util.h",
     ],
     strip_include_prefix = "/runtime",
     visibility = ["//visibility:public"],

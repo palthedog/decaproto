@@ -6,6 +6,8 @@
 
 #include "decaproto/descriptor.h"
 #include "decaproto/message.h"
+#include "decaproto/reflection.h"
+#include "decaproto/reflection_util.h"
 
 using namespace decaproto;
 using namespace std;
@@ -105,49 +107,28 @@ public:
         kTestReflection = new Reflection();
 
         // uint32 num = 1
-        kTestReflection->RegisterUInt32Field(
+        kTestReflection->RegisterSetUInt32(
                 FieldDescriptor(kNumTag, FieldType::kUInt32),
-                [](Message* base_message, uint32_t value) {
-                    ReflectionTestMessage* message =
-                            static_cast<ReflectionTestMessage*>(base_message);
-                    message->set_num(value);
-                },
-                [](const Message* base_message) {
-                    const ReflectionTestMessage* message =
-                            static_cast<const ReflectionTestMessage*>(
-                                    base_message);
-                    return message->num();
-                });
+                MsgCast(&ReflectionTestMessage::set_num));
+        kTestReflection->RegisterGetUInt32(
+                FieldDescriptor(kNumTag, FieldType::kUInt32),
+                MsgCast(&ReflectionTestMessage::num));
 
         // string str = 2
-        kTestReflection->RegisterStringField(
+        kTestReflection->RegisterSetString(
                 FieldDescriptor(kStrTag, FieldType::kString),
-                [](Message* base_message, const string& value) {
-                    ReflectionTestMessage* message =
-                            static_cast<ReflectionTestMessage*>(base_message);
-                    message->set_str(value);
-                },
-                [](const Message* base_message) {
-                    const ReflectionTestMessage* message =
-                            static_cast<const ReflectionTestMessage*>(
-                                    base_message);
-                    return message->str();
-                });
+                MsgCast(&ReflectionTestMessage::set_str));
+        kTestReflection->RegisterGetString(
+                FieldDescriptor(kStrTag, FieldType::kString),
+                MsgCast(&ReflectionTestMessage::str));
 
         // OtherMessage other = 3
-        kTestReflection->RegisterMessageField(
+        kTestReflection->RegisterMutableMessage(
                 FieldDescriptor(kOtherTag, FieldType::kMessage),
-                [](Message* base_message) {
-                    ReflectionTestMessage* message =
-                            static_cast<ReflectionTestMessage*>(base_message);
-                    return message->mutable_other();
-                },
-                [](const Message* base_message) {
-                    const ReflectionTestMessage* message =
-                            static_cast<const ReflectionTestMessage*>(
-                                    base_message);
-                    return message->other();
-                });
+                MsgCast(&ReflectionTestMessage::mutable_other));
+        kTestReflection->RegisterGetMessage(
+                FieldDescriptor(kOtherTag, FieldType::kMessage),
+                MsgCast(&ReflectionTestMessage::other));
 
         return kTestReflection;
     }

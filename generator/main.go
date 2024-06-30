@@ -72,21 +72,14 @@ func printReflection(m *descriptor.DescriptorProto, fp *FilePrinter, mp *Message
 
 		if f.GetType() == descriptor.FieldDescriptorProto_TYPE_MESSAGE {
 			src += print("reg_msg_field", `
-    {{.singleton_name}}->RegisterMessageField(
+    // Mutable getter
+    {{.singleton_name}}->RegisterMutableMessage(
         decaproto::FieldDescriptor({{.tag}}, {{.field_type}}),
-        // Mutable getter
-        [](Message* base_message) {
-            {{.msg_full_name}}* message =
-                static_cast< {{.msg_full_name}} *>(base_message);
-            return message->mutable_{{.field_name}} ();
-        },
-        // Getter
-        [](const Message* base_message) {
-            const {{.msg_full_name}}* message =
-                static_cast<const {{.msg_full_name}} *>(base_message);
-            return message->{{.field_name}}();
-        }
-    );
+		decaproto::MsgCast(&{{.msg_full_name}}::mutable_{{.field_name}}));
+    // Getter
+    {{.singleton_name}}->RegisterGetMessage(
+        decaproto::FieldDescriptor({{.tag}}, {{.field_type}}),
+		decaproto::MsgCast(&{{.msg_full_name}}::{{.field_name}}));
     `,
 				map[string]string{
 					"singleton_name": singleton_name,
@@ -98,21 +91,14 @@ func printReflection(m *descriptor.DescriptorProto, fp *FilePrinter, mp *Message
 				})
 		} else if f.GetType() == descriptor.FieldDescriptorProto_TYPE_ENUM {
 			src += print("reg_enum_field", `
-     {{.singleton_name}}->RegisterEnumField(
+    // EnumValue setter
+     {{.singleton_name}}->RegisterSetEnumValue(
         decaproto::FieldDescriptor({{.tag}}, {{.field_type}}),
-        // EnumValue setter
-        [](Message* base_message, int value) {
-            {{.msg_full_name}}* message =
-                static_cast< {{.msg_full_name}} *>(base_message);
-            return message->set_{{.field_name}} (static_cast< {{.cc_arg_type}} >(value));
-        },
-        // EnumValue getter
-        [](const Message* base_message) {
-            const {{.msg_full_name}}* message =
-                static_cast<const {{.msg_full_name}} *>(base_message);
-            return static_cast<int>(message->{{.field_name}}());
-        }
-    );
+		decaproto::CastForSetEnumValue(&{{.msg_full_name}}::set_{{.field_name}}));
+     // EnumValue getter
+     {{.singleton_name}}->RegisterGetEnumValue(
+        decaproto::FieldDescriptor({{.tag}}, {{.field_type}}),
+		decaproto::CastForGetEnumValue(&{{.msg_full_name}}::{{.field_name}}));
 `,
 				map[string]string{
 					"singleton_name": singleton_name,
@@ -124,21 +110,14 @@ func printReflection(m *descriptor.DescriptorProto, fp *FilePrinter, mp *Message
 				})
 		} else if isPrimitiveType(f) {
 			src += print("reg_field", `
-    {{.singleton_name}}->Register{{.CcType}}Field(
+    // Setter
+    {{.singleton_name}}->RegisterSet{{.CcType}}(
         decaproto::FieldDescriptor({{.tag}}, {{.field_type}}),
-        // Setter
-        [](Message* base_message, {{.cc_arg_type}} value) {
-            {{.msg_full_name}}* message =
-                static_cast< {{.msg_full_name}} *>(base_message);
-            message->set_{{.field_name}} (value);
-        },
-        // Getter
-        [](const Message* base_message) {
-            const {{.msg_full_name}}* message =
-                static_cast<const {{.msg_full_name}} *>(base_message);
-            return message->{{.field_name}}();
-        }
-    );
+		decaproto::MsgCast(&{{.msg_full_name}}::set_{{.field_name}}));
+    // Getter
+    {{.singleton_name}}->RegisterGet{{.CcType}}(
+        decaproto::FieldDescriptor({{.tag}}, {{.field_type}}),
+		decaproto::MsgCast(&{{.msg_full_name}}::{{.field_name}}));
     `,
 				map[string]string{
 					"singleton_name": singleton_name,
@@ -394,6 +373,7 @@ func processReq(req *plugin.CodeGeneratorRequest) *plugin.CodeGeneratorResponse 
 		ctx.printer.source_content += "#include \"" + header_file_name + "\"\n"
 		ctx.printer.source_content += "\n"
 		ctx.printer.source_content += "#include <cassert>\n"
+		ctx.printer.source_content += "#include \"decaproto/reflection_util.h\"\n"
 		ctx.printer.source_content += "\n"
 
 		for _, enm := range f.EnumType {
