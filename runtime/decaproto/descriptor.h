@@ -45,10 +45,10 @@ class FieldDescriptor {
 public:
     // Primitive types
     FieldDescriptor(
-        uint32_t tag,
-        FieldType type,
-        bool repeated = false,
-        bool packed = false)
+            uint32_t tag,
+            FieldType type,
+            bool repeated = false,
+            bool packed = false)
         : tag_(tag), type_(type), repeated_(repeated), packed_(packed) {
     }
 

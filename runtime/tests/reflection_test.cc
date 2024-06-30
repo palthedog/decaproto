@@ -88,11 +88,11 @@ public:
         // Descriptor which represents this Message.
         kTestDescriptor = new Descriptor();
         kTestDescriptor->RegisterField(
-            FieldDescriptor(kNumTag, FieldType::kUInt32));
+                FieldDescriptor(kNumTag, FieldType::kUInt32));
         kTestDescriptor->RegisterField(
-            FieldDescriptor(kStrTag, FieldType::kString));
+                FieldDescriptor(kStrTag, FieldType::kString));
         kTestDescriptor->RegisterField(
-            FieldDescriptor(kOtherTag, FieldType::kMessage));
+                FieldDescriptor(kOtherTag, FieldType::kMessage));
         return kTestDescriptor;
     }
 
@@ -106,45 +106,48 @@ public:
 
         // uint32 num = 1
         kTestReflection->RegisterUInt32Field(
-            FieldDescriptor(kNumTag, FieldType::kUInt32),
-            [](Message* base_message, uint32_t value) {
-                ReflectionTestMessage* message =
-                    static_cast<ReflectionTestMessage*>(base_message);
-                message->set_num(value);
-            },
-            [](const Message* base_message) {
-                const ReflectionTestMessage* message =
-                    static_cast<const ReflectionTestMessage*>(base_message);
-                return message->num();
-            });
+                FieldDescriptor(kNumTag, FieldType::kUInt32),
+                [](Message* base_message, uint32_t value) {
+                    ReflectionTestMessage* message =
+                            static_cast<ReflectionTestMessage*>(base_message);
+                    message->set_num(value);
+                },
+                [](const Message* base_message) {
+                    const ReflectionTestMessage* message =
+                            static_cast<const ReflectionTestMessage*>(
+                                    base_message);
+                    return message->num();
+                });
 
         // string str = 2
         kTestReflection->RegisterStringField(
-            FieldDescriptor(kStrTag, FieldType::kString),
-            [](Message* base_message, const string& value) {
-                ReflectionTestMessage* message =
-                    static_cast<ReflectionTestMessage*>(base_message);
-                message->set_str(value);
-            },
-            [](const Message* base_message) {
-                const ReflectionTestMessage* message =
-                    static_cast<const ReflectionTestMessage*>(base_message);
-                return message->str();
-            });
+                FieldDescriptor(kStrTag, FieldType::kString),
+                [](Message* base_message, const string& value) {
+                    ReflectionTestMessage* message =
+                            static_cast<ReflectionTestMessage*>(base_message);
+                    message->set_str(value);
+                },
+                [](const Message* base_message) {
+                    const ReflectionTestMessage* message =
+                            static_cast<const ReflectionTestMessage*>(
+                                    base_message);
+                    return message->str();
+                });
 
         // OtherMessage other = 3
         kTestReflection->RegisterMessageField(
-            FieldDescriptor(kOtherTag, FieldType::kMessage),
-            [](Message* base_message) {
-                ReflectionTestMessage* message =
-                    static_cast<ReflectionTestMessage*>(base_message);
-                return message->mutable_other();
-            },
-            [](const Message* base_message) {
-                const ReflectionTestMessage* message =
-                    static_cast<const ReflectionTestMessage*>(base_message);
-                return message->other();
-            });
+                FieldDescriptor(kOtherTag, FieldType::kMessage),
+                [](Message* base_message) {
+                    ReflectionTestMessage* message =
+                            static_cast<ReflectionTestMessage*>(base_message);
+                    return message->mutable_other();
+                },
+                [](const Message* base_message) {
+                    const ReflectionTestMessage* message =
+                            static_cast<const ReflectionTestMessage*>(
+                                    base_message);
+                    return message->other();
+                });
 
         return kTestReflection;
     }
@@ -184,16 +187,16 @@ TEST(ReflectionTest, MessageFieldTest) {
 
     // Note that the order of fields in the descriptor is not guaranteed.
     const FieldDescriptor& field_desc = *std::find_if(
-        descriptor->GetFields().begin(),
-        descriptor->GetFields().end(),
-        [](const FieldDescriptor& field_desc) {
-            return field_desc.GetTag() == kOtherTag;
-        });
+            descriptor->GetFields().begin(),
+            descriptor->GetFields().end(),
+            [](const FieldDescriptor& field_desc) {
+                return field_desc.GetTag() == kOtherTag;
+            });
     EXPECT_EQ(FieldType::kMessage, field_desc.GetType());
 
     // Get a mutable pointer to the message field through reflection
-    OtherMessage* other =
-        static_cast<OtherMessage*>(reflection->MutableMessage(&m, &field_desc));
+    OtherMessage* other = static_cast<OtherMessage*>(
+            reflection->MutableMessage(&m, &field_desc));
     other->set_num(128);
 
     EXPECT_TRUE(m.has_other());

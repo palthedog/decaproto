@@ -95,10 +95,10 @@ func printReflection(m *descriptor.DescriptorProto, fp *FilePrinter, mp *Message
 			})
 			src += buf.String()
 		} else if f.GetType() == descriptor.FieldDescriptorProto_TYPE_ENUM {
-			// TODO: Suport me
+			// TODO: Support me
 			continue
 		} else if f.GetLabel() == descriptor.FieldDescriptorProto_LABEL_REPEATED {
-			// TODO: Suport me
+			// TODO: Support me
 			continue
 		} else if isPrimitiveType(f) {
 			var t = template.Must(template.New("reg_field").Parse(`

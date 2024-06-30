@@ -3,9 +3,18 @@
 Language: Cpp
 BasedOnStyle: Google
 IndentWidth: 4
+ContinuationIndentWidth: 8
 AccessModifierOffset: -4
 
 AllowShortFunctionsOnASingleLine: false
+# Prefer
+# void takes_two_arguments(
+#         int arg0,
+#         int arg1);
+# rather than
+# void takes_two_arguments(int arg0,
+#                          int arg1);
+# This is because the former is more readable when the function name is long.
 AlignAfterOpenBracket: AlwaysBreak
 
 AllowAllArgumentsOnNextLine: true
