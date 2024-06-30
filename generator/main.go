@@ -74,17 +74,16 @@ func printReflection(m *descriptor.DescriptorProto, fp *FilePrinter, mp *Message
 			src += print("reg_msg_field", `
     // Mutable getter
     {{.singleton_name}}->RegisterMutableMessage(
-        decaproto::FieldDescriptor({{.tag}}, {{.field_type}}),
+        {{.tag}},
 		decaproto::MsgCast(&{{.msg_full_name}}::mutable_{{.field_name}}));
     // Getter
     {{.singleton_name}}->RegisterGetMessage(
-        decaproto::FieldDescriptor({{.tag}}, {{.field_type}}),
+        {{.tag}},
 		decaproto::MsgCast(&{{.msg_full_name}}::{{.field_name}}));
     `,
 				map[string]string{
 					"singleton_name": singleton_name,
 					"tag":            tag_str,
-					"field_type":     type_name.deca_enum_name,
 					"cc_arg_type":    type_name.cc_arg_type,
 					"msg_full_name":  msg_full_name,
 					"field_name":     f.GetName(),
@@ -93,17 +92,16 @@ func printReflection(m *descriptor.DescriptorProto, fp *FilePrinter, mp *Message
 			src += print("reg_enum_field", `
     // EnumValue setter
      {{.singleton_name}}->RegisterSetEnumValue(
-        decaproto::FieldDescriptor({{.tag}}, {{.field_type}}),
+        {{.tag}},
 		decaproto::CastForSetEnumValue(&{{.msg_full_name}}::set_{{.field_name}}));
      // EnumValue getter
      {{.singleton_name}}->RegisterGetEnumValue(
-        decaproto::FieldDescriptor({{.tag}}, {{.field_type}}),
+        {{.tag}},
 		decaproto::CastForGetEnumValue(&{{.msg_full_name}}::{{.field_name}}));
 `,
 				map[string]string{
 					"singleton_name": singleton_name,
 					"tag":            tag_str,
-					"field_type":     type_name.deca_enum_name,
 					"cc_arg_type":    type_name.cc_arg_type,
 					"msg_full_name":  msg_full_name,
 					"field_name":     f.GetName(),
@@ -112,18 +110,17 @@ func printReflection(m *descriptor.DescriptorProto, fp *FilePrinter, mp *Message
 			src += print("reg_field", `
     // Setter
     {{.singleton_name}}->RegisterSet{{.CcType}}(
-        decaproto::FieldDescriptor({{.tag}}, {{.field_type}}),
+        {{.tag}},
 		decaproto::MsgCast(&{{.msg_full_name}}::set_{{.field_name}}));
     // Getter
     {{.singleton_name}}->RegisterGet{{.CcType}}(
-        decaproto::FieldDescriptor({{.tag}}, {{.field_type}}),
+        {{.tag}},
 		decaproto::MsgCast(&{{.msg_full_name}}::{{.field_name}}));
     `,
 				map[string]string{
 					"singleton_name": singleton_name,
 					"CcType":         type_name.cc_camel_name,
 					"tag":            tag_str,
-					"field_type":     type_name.deca_enum_name,
 					"cc_arg_type":    type_name.cc_arg_type,
 					"msg_full_name":  msg_full_name,
 					"field_name":     f.GetName(),

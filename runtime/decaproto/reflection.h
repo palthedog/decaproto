@@ -57,19 +57,15 @@ public:
     ~Reflection() {
     }
 
-#define DEFINE_FOR(cc_type, CcType)                                          \
-    void RegisterSet##CcType(                                                \
-            const FieldDescriptor& field, const SetterFn<cc_type>& setter) { \
-        uint32_t tag = field.GetTag();                                       \
-        set_##CcType##_impls_[tag] = setter;                                 \
-    }                                                                        \
-                                                                             \
-    void Set##CcType(                                                        \
-            Message* message, const FieldDescriptor* field, cc_type value)   \
-            const {                                                          \
-        auto it = set_##CcType##_impls_.find(field->GetTag());               \
-        assert(it != set_##CcType##_impls_.end());                           \
-        it->second(message, value);                                          \
+#define DEFINE_FOR(cc_type, CcType)                                           \
+    void RegisterSet##CcType(uint32_t tag, const SetterFn<cc_type>& setter) { \
+        set_##CcType##_impls_[tag] = setter;                                  \
+    }                                                                         \
+                                                                              \
+    void Set##CcType(Message* message, uint32_t tag, cc_type value) const {   \
+        auto it = set_##CcType##_impls_.find(tag);                            \
+        assert(it != set_##CcType##_impls_.end());                            \
+        it->second(message, value);                                           \
     }
 
     // Define Setter resgisterers
@@ -87,15 +83,12 @@ public:
 #undef DEFINE_FOR  // Define Registerer
 
 #define DEFINE_FOR(cc_type, CcType)                                           \
-    void RegisterGet##CcType(                                                 \
-            const FieldDescriptor& field, const GetterFn<cc_type>& getter) {  \
-        uint32_t tag = field.GetTag();                                        \
+    void RegisterGet##CcType(uint32_t tag, const GetterFn<cc_type>& getter) { \
         get_##CcType##_impls_[tag] = getter;                                  \
     }                                                                         \
                                                                               \
-    cc_type Get##CcType(const Message* message, const FieldDescriptor* field) \
-            const {                                                           \
-        auto it = get_##CcType##_impls_.find(field->GetTag());                \
+    cc_type Get##CcType(const Message* message, uint32_t tag) const {         \
+        auto it = get_##CcType##_impls_.find(tag);                            \
         assert(it != get_##CcType##_impls_.end());                            \
         return it->second(message);                                           \
     }
@@ -115,12 +108,10 @@ public:
 
 #undef DEFINE_FOR  // Define Registerer
 
-#define DEFINE_FOR(cc_type, CcType)                  \
-    void RegisterMutable##CcType(                    \
-            const FieldDescriptor& field,            \
-            const MutableFn<cc_type>& mut_getter) {  \
-        uint32_t tag = field.GetTag();               \
-        mutable_##CcType##_impls_[tag] = mut_getter; \
+#define DEFINE_FOR(cc_type, CcType)                               \
+    void RegisterMutable##CcType(                                 \
+            uint32_t tag, const MutableFn<cc_type>& mut_getter) { \
+        mutable_##CcType##_impls_[tag] = mut_getter;              \
     }
 
     DEFINE_FOR(Message*, Message)
@@ -129,9 +120,8 @@ public:
 
     // Returns a mutable field message associated with the
     // FieldDescriptor
-    Message* MutableMessage(
-            Message* message, const FieldDescriptor* field) const {
-        auto it = mutable_Message_impls_.find(field->GetTag());
+    Message* MutableMessage(Message* message, uint32_t tag) const {
+        auto it = mutable_Message_impls_.find(tag);
         assert(it != mutable_Message_impls_.end());
         return it->second(message);
     }

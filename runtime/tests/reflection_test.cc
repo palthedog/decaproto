@@ -3,6 +3,7 @@
 #include <gtest/gtest.h>
 
 #include <string>
+#include <vector>
 
 #include "decaproto/descriptor.h"
 #include "decaproto/message.h"
@@ -47,12 +48,23 @@ const int kNumTag = 0;
 const int kStrTag = 1;
 const int kOtherTag = 2;
 const int kEnumFieldTag = 3;
+const int kRepNumsTag = 4;
 class ReflectionTestMessage : public Message {
-    uint32_t num_;                         // uint32 num = 0
-    string str_;                           // string str = 1
-    std::unique_ptr<OtherMessage> other_;  // OtherMessage other = 2
-    TestEnum enum_field_;                  //  TestEnum enum_field= 3
+    // uint32 num = 0
+    uint32_t num_;
+
+    // string str = 1
+    string str_;
+
+    // OtherMessage other = 2
+    unique_ptr<OtherMessage> other_;
+
+    // TestEnum enum_field= 3
+    TestEnum enum_field_;
     bool has_enum_field_ = false;
+
+    // repeated uint32 rep_nums = 4
+    vector<uint32_t> rep_nums_;
 
 public:
     ReflectionTestMessage() {
@@ -120,6 +132,8 @@ public:
                 FieldDescriptor(kOtherTag, FieldType::kMessage));
         kTestDescriptor->RegisterField(
                 FieldDescriptor(kEnumFieldTag, FieldType::kEnum));
+        kTestDescriptor->RegisterField(
+                FieldDescriptor(kRepNumsTag, FieldType::kUInt32, true));
         return kTestDescriptor;
     }
 
@@ -133,34 +147,28 @@ public:
 
         // uint32 num = 1
         kTestReflection->RegisterSetUInt32(
-                FieldDescriptor(kNumTag, FieldType::kUInt32),
-                MsgCast(&ReflectionTestMessage::set_num));
+                kNumTag, MsgCast(&ReflectionTestMessage::set_num));
         kTestReflection->RegisterGetUInt32(
-                FieldDescriptor(kNumTag, FieldType::kUInt32),
-                MsgCast(&ReflectionTestMessage::num));
+                kNumTag, MsgCast(&ReflectionTestMessage::num));
 
         // string str = 2
         kTestReflection->RegisterSetString(
-                FieldDescriptor(kStrTag, FieldType::kString),
-                MsgCast(&ReflectionTestMessage::set_str));
+                kStrTag, MsgCast(&ReflectionTestMessage::set_str));
         kTestReflection->RegisterGetString(
-                FieldDescriptor(kStrTag, FieldType::kString),
-                MsgCast(&ReflectionTestMessage::str));
+                kStrTag, MsgCast(&ReflectionTestMessage::str));
 
         // OtherMessage other = 3
         kTestReflection->RegisterMutableMessage(
-                FieldDescriptor(kOtherTag, FieldType::kMessage),
-                MsgCast(&ReflectionTestMessage::mutable_other));
+                kOtherTag, MsgCast(&ReflectionTestMessage::mutable_other));
         kTestReflection->RegisterGetMessage(
-                FieldDescriptor(kOtherTag, FieldType::kMessage),
-                MsgCast(&ReflectionTestMessage::other));
+                kOtherTag, MsgCast(&ReflectionTestMessage::other));
 
         // TestEnum enum_field = 4
         kTestReflection->RegisterSetEnumValue(
-                FieldDescriptor(kEnumFieldTag, FieldType::kEnum),
+                kEnumFieldTag,
                 CastForSetEnumValue(&ReflectionTestMessage::set_enum_field));
         kTestReflection->RegisterGetEnumValue(
-                FieldDescriptor(kEnumFieldTag, FieldType::kEnum),
+                kEnumFieldTag,
                 CastForGetEnumValue(&ReflectionTestMessage::enum_field));
         return kTestReflection;
     }
@@ -182,9 +190,9 @@ TEST(ReflectionTest, SimpleTest) {
     const Reflection* reflection = m.GetReflection();
 
     const FieldDescriptor& num_field = FindFieldDescriptor(descriptor, kNumTag);
-    reflection->SetUInt32(&m, &num_field, 100);
+    reflection->SetUInt32(&m, num_field.GetTag(), 100);
     const FieldDescriptor& str_field = FindFieldDescriptor(descriptor, kStrTag);
-    reflection->SetString(&m, &str_field, "hello");
+    reflection->SetString(&m, str_field.GetTag(), "hello");
 
     EXPECT_EQ(100, m.num());
     EXPECT_EQ("hello", m.str());
@@ -207,7 +215,7 @@ TEST(ReflectionTest, MessageFieldTest) {
 
     // Get a mutable pointer to the message field through reflection
     OtherMessage* other = static_cast<OtherMessage*>(
-            reflection->MutableMessage(&m, &field_desc));
+            reflection->MutableMessage(&m, field_desc.GetTag()));
     other->set_num(128);
 
     EXPECT_TRUE(m.has_other());
@@ -230,7 +238,7 @@ TEST(ReflectionTest, SetEnumValueTest) {
     EXPECT_EQ(FieldType::kEnum, field_desc.GetType());
 
     // Get a mutable pointer to the message field through reflection
-    reflection->SetEnumValue(&m, &field_desc, (int)TestEnum::ENUM_B);
+    reflection->SetEnumValue(&m, field_desc.GetTag(), (int)TestEnum::ENUM_B);
 
     EXPECT_TRUE(m.has_enum_field());
     EXPECT_EQ(TestEnum::ENUM_B, m.enum_field());
@@ -252,7 +260,7 @@ TEST(ReflectionTest, GetEnumValueTest) {
     EXPECT_EQ(FieldType::kEnum, field_desc.GetType());
 
     // Get a mutable pointer to the message field through reflection
-    int enum_value = reflection->GetEnumValue(&m, &field_desc);
+    int enum_value = reflection->GetEnumValue(&m, field_desc.GetTag());
 
     EXPECT_EQ(TestEnum::ENUM_C, (TestEnum)enum_value);
 }
