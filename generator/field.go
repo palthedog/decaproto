@@ -20,6 +20,10 @@ type TypeNameInfo struct {
 	// e.g. FieldType::kUInt64, FieldType::kInt32, FieldType::kString
 	deca_enum_name string
 
+	// in native C++ codes w/o any qualifiers
+	// e.g. uint64_t, int32_t, std::string
+	cc_raw_type string
+
 	// in native C++ codes. when used as a return value for getters
 	// e.g. uint64_t, int32_t, std::string
 	cc_ret_type string
@@ -33,64 +37,88 @@ type TypeNameInfo struct {
 	cc_camel_name string
 }
 
-func NewTypeNameInfo(proto_name, deca_enum_name, cc_ret_type, cc_arg_type, cc_camel_name string) TypeNameInfo {
+func NewPrimitiveTypeNameInfo(proto_name, deca_enum_name, cc_raw_type, cc_camel_name string) TypeNameInfo {
 	return TypeNameInfo{
 		proto_name:     proto_name,
 		deca_enum_name: "decaproto::FieldType::" + deca_enum_name,
-		cc_ret_type:    cc_ret_type,
-		cc_arg_type:    cc_arg_type,
+		cc_raw_type:    cc_raw_type,
+		cc_ret_type:    cc_raw_type,
+		cc_arg_type:    cc_raw_type,
+		cc_camel_name:  cc_camel_name,
+	}
+}
+
+func NewObjectTypeNameInfo(proto_name, deca_enum_name, cc_raw_type, cc_camel_name string) TypeNameInfo {
+	return TypeNameInfo{
+		proto_name:     proto_name,
+		deca_enum_name: "decaproto::FieldType::" + deca_enum_name,
+		cc_raw_type:    cc_raw_type,
+		cc_ret_type:    "const " + cc_raw_type + "&",
+		cc_arg_type:    "const " + cc_raw_type + "&",
+		cc_camel_name:  cc_camel_name,
+	}
+}
+
+func NewGeneratedTypeNameInfo(deca_enum_name, cc_camel_name string) TypeNameInfo {
+	n_a := "NOT_AVAILABLE_YET_FILL_ME"
+	return TypeNameInfo{
+		proto_name:     n_a,
+		deca_enum_name: "decaproto::FieldType::" + deca_enum_name,
+		cc_raw_type:    n_a,
+		cc_ret_type:    n_a,
+		cc_arg_type:    n_a,
 		cc_camel_name:  cc_camel_name,
 	}
 }
 
 var type_name_infos_map = map[descriptor.FieldDescriptorProto_Type]TypeNameInfo{
-	descriptor.FieldDescriptorProto_TYPE_UINT64:  NewTypeNameInfo("uint64", "kUInt64", "uint64_t", "uint64_t", "UInt64"),
-	descriptor.FieldDescriptorProto_TYPE_INT64:   NewTypeNameInfo("int64", "kInt64", "int64_t", "int64_t", "Int64"),
-	descriptor.FieldDescriptorProto_TYPE_FIXED64: NewTypeNameInfo("fixed64", "kFixed64", "uint64_t", "uint64_t", "UInt64"),
-	descriptor.FieldDescriptorProto_TYPE_UINT32:  NewTypeNameInfo("uint32", "kUInt32", "uint32_t", "uint32_t", "UInt32"),
-	descriptor.FieldDescriptorProto_TYPE_INT32:   NewTypeNameInfo("int32", "kInt32", "int32_t", "int32_t", "Int32"),
-	descriptor.FieldDescriptorProto_TYPE_FIXED32: NewTypeNameInfo("fixed32", "kFixed32", "uint32_t", "uint32_t", "UInt32"),
-	descriptor.FieldDescriptorProto_TYPE_DOUBLE:  NewTypeNameInfo("double", "kDouble", "double", "double", "Double"),
-	descriptor.FieldDescriptorProto_TYPE_FLOAT:   NewTypeNameInfo("float", "kFloat", "float", "float", "Float"),
-	descriptor.FieldDescriptorProto_TYPE_BOOL:    NewTypeNameInfo("bool", "kBool", "bool", "bool", "Bool"),
-	descriptor.FieldDescriptorProto_TYPE_STRING:  NewTypeNameInfo("string", "kString", "std::string", "const std::string&", "String"),
+	descriptor.FieldDescriptorProto_TYPE_UINT64:  NewPrimitiveTypeNameInfo("uint64", "kUInt64", "uint64_t", "UInt64"),
+	descriptor.FieldDescriptorProto_TYPE_INT64:   NewPrimitiveTypeNameInfo("int64", "kInt64", "int64_t", "Int64"),
+	descriptor.FieldDescriptorProto_TYPE_FIXED64: NewPrimitiveTypeNameInfo("fixed64", "kFixed64", "uint64_t", "UInt64"),
+	descriptor.FieldDescriptorProto_TYPE_UINT32:  NewPrimitiveTypeNameInfo("uint32", "kUInt32", "uint32_t", "UInt32"),
+	descriptor.FieldDescriptorProto_TYPE_INT32:   NewPrimitiveTypeNameInfo("int32", "kInt32", "int32_t", "Int32"),
+	descriptor.FieldDescriptorProto_TYPE_FIXED32: NewPrimitiveTypeNameInfo("fixed32", "kFixed32", "uint32_t", "UInt32"),
+	descriptor.FieldDescriptorProto_TYPE_DOUBLE:  NewPrimitiveTypeNameInfo("double", "kDouble", "double", "Double"),
+	descriptor.FieldDescriptorProto_TYPE_FLOAT:   NewPrimitiveTypeNameInfo("float", "kFloat", "float", "Float"),
+	descriptor.FieldDescriptorProto_TYPE_BOOL:    NewPrimitiveTypeNameInfo("bool", "kBool", "bool", "Bool"),
+	descriptor.FieldDescriptorProto_TYPE_STRING:  NewObjectTypeNameInfo("string", "kString", "std::string", "String"),
 
-	descriptor.FieldDescriptorProto_TYPE_MESSAGE: NewTypeNameInfo("N_A_FILL_ME", "kMessage", "N_A_FILL_ME", "N_A_FILL_ME", "N_A_FILL_ME_Message"),
-	descriptor.FieldDescriptorProto_TYPE_ENUM:    NewTypeNameInfo("N_A_FILL_ME", "kEnum", "N_A_FILL_ME", "N_A_FILL_ME", "N_A_FILL_ME_Enum"),
+	descriptor.FieldDescriptorProto_TYPE_MESSAGE: NewGeneratedTypeNameInfo("kMessage", "Message"),
+	descriptor.FieldDescriptorProto_TYPE_ENUM:    NewGeneratedTypeNameInfo("kEnum", "Enum"),
 }
 
 func getTypeNameInfo(f *descriptor.FieldDescriptorProto) TypeNameInfo {
 	info, ok := type_name_infos_map[f.GetType()]
 	if !ok {
-		// TODO: Support message
 		// we can create TypeInfoName struct here for messages
 		log.Fatal("Unsupported field type", f.GetType(), f.GetName())
 	}
-	return info
-}
 
-// TODO: Get rid of it.Return TypeNameInfo instead (even for Messges)
-//  otherwise, we can't generate setters/getters in proper way
-func protoMessageTypeToCppType(f *descriptor.FieldDescriptorProto) string {
 	if f.GetType() == descriptor.FieldDescriptorProto_TYPE_MESSAGE {
 		// .OtherMessage
-		// .OuterMessage.OtherMessage
-		m := f.GetTypeName()
-		return strings.Join(strings.Split(m, "."), "::")
+		// .OuterMessage.NestedMessage
+		proto_type_name := f.GetTypeName()
+		// ::OuterMessage::NestedMessage
+		cc_raw_type := strings.Join(strings.Split(proto_type_name, "."), "::")
+		// Access Message objects via const reference
+		info.proto_name = proto_type_name
+		info.cc_raw_type = cc_raw_type
+		info.cc_arg_type = "const " + cc_raw_type + "&"
+		info.cc_ret_type = "const " + cc_raw_type + "&"
 	} else if f.GetType() == descriptor.FieldDescriptorProto_TYPE_ENUM {
-		// enum
-		m := f.GetTypeName()
-		return strings.Join(strings.Split(m, "."), "::")
+		// .MyEnum
+		// .OuterMessage.NestedEnum
+		proto_type_name := f.GetTypeName()
+		// ::OuterMessage::NestedEnum
+		cc_raw_type := strings.Join(strings.Split(proto_type_name, "."), "::")
+		// Enum is copyable
+		info.proto_name = proto_type_name
+		info.cc_raw_type = cc_raw_type
+		info.cc_arg_type = cc_raw_type
+		info.cc_ret_type = cc_raw_type
 	}
 
-	cpp_name, ok := type_name_infos_map[f.GetType()]
-	if ok {
-		// primitive types
-		return cpp_name.cc_ret_type
-	} else {
-		log.Fatal("Unsupported field type", f.GetType(), f.GetName())
-		return ""
-	}
+	return info
 }
 
 func isPrimitiveType(f *descriptor.FieldDescriptorProto) bool {
@@ -111,7 +139,10 @@ func isPrimitiveType(f *descriptor.FieldDescriptorProto) bool {
 }
 
 func processField(ctx *Context, msg_printer *MessagePrinter, f *descriptor.FieldDescriptorProto) {
-	cpp_name := protoMessageTypeToCppType(f)
+	type_name_info := getTypeNameInfo(f)
+	// TODO: Replace it with type_name_info so that we can share more logic across
+	// different types of fields
+	cpp_name := type_name_info.cc_raw_type
 	if f.GetLabel() == descriptor.FieldDescriptorProto_LABEL_REPEATED {
 		// repeated
 		if isPrimitiveType(f) {
@@ -139,7 +170,7 @@ func processField(ctx *Context, msg_printer *MessagePrinter, f *descriptor.Field
 			addPrimitiveField(f, cpp_name, msg_printer)
 		} else if f.GetType() == descriptor.FieldDescriptorProto_TYPE_MESSAGE {
 			// message
-			addMessageField(f, cpp_name, msg_printer)
+			addMessageField(f, type_name_info, msg_printer)
 		} else {
 			log.Fatal("Unsupported field type", f.GetType(), f.GetName())
 		}
@@ -305,14 +336,14 @@ func addRepeatedPrimitiveField(f *descriptor.FieldDescriptorProto, cpp_type stri
 	msg_printer.PushPublic(buf.String())
 }
 
-func addMessageField(f *descriptor.FieldDescriptorProto, cpp_type string, msg_printer *MessagePrinter) {
+func addMessageField(f *descriptor.FieldDescriptorProto, type_name TypeNameInfo, msg_printer *MessagePrinter) {
 	const pri_template = `
 	std::unique_ptr<{{.cpp_type}}> {{.pri_name}};
 
  `
 
 	const pub_template = `
-	const {{.cpp_type}}& {{.f_name}}() const {
+	{{.cpp_ret_type}} {{.f_name}}() const {
 	    return *{{.pri_name}};
 	}
 
@@ -345,16 +376,18 @@ func addMessageField(f *descriptor.FieldDescriptorProto, cpp_type string, msg_pr
 	var pri_name = f.GetName() + "__"
 	var buf bytes.Buffer
 	pri_tpl.Execute(&buf, map[string]string{
-		"cpp_type": cpp_type,
-		"pri_name": pri_name,
+		"cpp_type":     type_name.cc_raw_type,
+		"cpp_ret_type": type_name.cc_ret_type,
+		"pri_name":     pri_name,
 	})
 	msg_printer.PushPrivate(buf.String())
 
 	buf.Reset()
 	pub_tpl.Execute(&buf, map[string]string{
-		"cpp_type": cpp_type,
-		"pri_name": pri_name,
-		"f_name":   f.GetName(),
+		"cpp_type":     type_name.cc_raw_type,
+		"cpp_ret_type": type_name.cc_ret_type,
+		"pri_name":     pri_name,
+		"f_name":       f.GetName(),
 	})
 	msg_printer.PushPublic(buf.String())
 }

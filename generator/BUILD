@@ -14,6 +14,7 @@ go_library(
     srcs = [
         "field.go",
         "main.go",
+        "template.go",
     ],
     importpath = "github.com/palthedog/decaproto/generator",
     visibility = ["//visibility:private"],

@@ -1,13 +1,11 @@
 package main
 
 import (
-	"bytes"
 	"fmt"
 	"io"
 	"log"
 	"os"
 	"strings"
-	"text/template"
 
 	"golang.org/x/exp/maps"
 
@@ -66,8 +64,14 @@ func printReflection(m *descriptor.DescriptorProto, fp *FilePrinter, mp *Message
 	for _, f := range m.GetField() {
 		src += "    "
 		type_name := getTypeNameInfo(f)
+		tag_str := fmt.Sprintf("%d", f.GetNumber())
+		if f.GetLabel() == descriptor.FieldDescriptorProto_LABEL_REPEATED {
+			// TODO: Support repeated fields
+			continue
+		}
+
 		if f.GetType() == descriptor.FieldDescriptorProto_TYPE_MESSAGE {
-			var t = template.Must(template.New("reg_msg_field").Parse(`
+			src += print("reg_msg_field", `
     {{.singleton_name}}->RegisterMessageField(
         decaproto::FieldDescriptor({{.tag}}, {{.field_type}}),
         // Mutable getter
@@ -83,25 +87,43 @@ func printReflection(m *descriptor.DescriptorProto, fp *FilePrinter, mp *Message
             return message->{{.field_name}}();
         }
     );
-    `))
-			var buf bytes.Buffer
-			t.Execute(&buf, map[string]string{
-				"singleton_name": singleton_name,
-				"tag":            fmt.Sprintf("%d", f.GetNumber()),
-				"field_type":     type_name.deca_enum_name,
-				"cc_arg_type":    type_name.cc_arg_type,
-				"msg_full_name":  msg_full_name,
-				"field_name":     f.GetName(),
-			})
-			src += buf.String()
+    `,
+				map[string]string{
+					"singleton_name": singleton_name,
+					"tag":            tag_str,
+					"field_type":     type_name.deca_enum_name,
+					"cc_arg_type":    type_name.cc_arg_type,
+					"msg_full_name":  msg_full_name,
+					"field_name":     f.GetName(),
+				})
 		} else if f.GetType() == descriptor.FieldDescriptorProto_TYPE_ENUM {
-			// TODO: Support me
-			continue
-		} else if f.GetLabel() == descriptor.FieldDescriptorProto_LABEL_REPEATED {
-			// TODO: Support me
-			continue
+			src += print("reg_enum_field", `
+     {{.singleton_name}}->RegisterEnumField(
+        decaproto::FieldDescriptor({{.tag}}, {{.field_type}}),
+        // EnumValue setter
+        [](Message* base_message, int value) {
+            {{.msg_full_name}}* message =
+                static_cast< {{.msg_full_name}} *>(base_message);
+            return message->set_{{.field_name}} (static_cast< {{.cc_arg_type}} >(value));
+        },
+        // EnumValue getter
+        [](const Message* base_message) {
+            const {{.msg_full_name}}* message =
+                static_cast<const {{.msg_full_name}} *>(base_message);
+            return static_cast<int>(message->{{.field_name}}());
+        }
+    );
+`,
+				map[string]string{
+					"singleton_name": singleton_name,
+					"tag":            tag_str,
+					"field_type":     type_name.deca_enum_name,
+					"cc_arg_type":    type_name.cc_arg_type,
+					"msg_full_name":  msg_full_name,
+					"field_name":     f.GetName(),
+				})
 		} else if isPrimitiveType(f) {
-			var t = template.Must(template.New("reg_field").Parse(`
+			src += print("reg_field", `
     {{.singleton_name}}->Register{{.CcType}}Field(
         decaproto::FieldDescriptor({{.tag}}, {{.field_type}}),
         // Setter
@@ -117,18 +139,16 @@ func printReflection(m *descriptor.DescriptorProto, fp *FilePrinter, mp *Message
             return message->{{.field_name}}();
         }
     );
-    `))
-			var buf bytes.Buffer
-			t.Execute(&buf, map[string]string{
-				"singleton_name": singleton_name,
-				"CcType":         type_name.cc_camel_name,
-				"tag":            fmt.Sprintf("%d", f.GetNumber()),
-				"field_type":     type_name.deca_enum_name,
-				"cc_arg_type":    type_name.cc_arg_type,
-				"msg_full_name":  msg_full_name,
-				"field_name":     f.GetName(),
-			})
-			src += buf.String()
+    `,
+				map[string]string{
+					"singleton_name": singleton_name,
+					"CcType":         type_name.cc_camel_name,
+					"tag":            tag_str,
+					"field_type":     type_name.deca_enum_name,
+					"cc_arg_type":    type_name.cc_arg_type,
+					"msg_full_name":  msg_full_name,
+					"field_name":     f.GetName(),
+				})
 		}
 	}
 	src += "    return " + singleton_name + ";\n"
