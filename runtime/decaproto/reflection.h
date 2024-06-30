@@ -57,23 +57,20 @@ public:
     ~Reflection() {
     }
 
-    // Allows the code generator to register setter/getter for the given
-    // field. Internal use only.
 #define DEFINE_FOR(cc_type, CcType)                                          \
     void RegisterSet##CcType(                                                \
             const FieldDescriptor& field, const SetterFn<cc_type>& setter) { \
         uint32_t tag = field.GetTag();                                       \
         set_##CcType##_impls_[tag] = setter;                                 \
+    }                                                                        \
+                                                                             \
+    void Set##CcType(                                                        \
+            Message* message, const FieldDescriptor* field, cc_type value)   \
+            const {                                                          \
+        auto it = set_##CcType##_impls_.find(field->GetTag());               \
+        assert(it != set_##CcType##_impls_.end());                           \
+        it->second(message, value);                                          \
     }
-
-    // This is the expanded version of the above macro for reference.
-    // DEF_FIELD_REGISTER(uint32_t, uint32, UInt32)
-    /*
-    void RegisterUInt32Field(
-        const FieldDescriptor& field, const SetterFn<uint32_t>& setter)
-    { uint32_t tag = field.GetTag(); set_uint32_impls_[tag] = setter;
-    }
-    */
 
     // Define Setter resgisterers
 
@@ -89,11 +86,18 @@ public:
 
 #undef DEFINE_FOR  // Define Registerer
 
-#define DEFINE_FOR(cc_type, CcType)                                          \
-    void RegisterGet##CcType(                                                \
-            const FieldDescriptor& field, const GetterFn<cc_type>& getter) { \
-        uint32_t tag = field.GetTag();                                       \
-        get_##CcType##_impls_[tag] = getter;                                 \
+#define DEFINE_FOR(cc_type, CcType)                                           \
+    void RegisterGet##CcType(                                                 \
+            const FieldDescriptor& field, const GetterFn<cc_type>& getter) {  \
+        uint32_t tag = field.GetTag();                                        \
+        get_##CcType##_impls_[tag] = getter;                                  \
+    }                                                                         \
+                                                                              \
+    cc_type Get##CcType(const Message* message, const FieldDescriptor* field) \
+            const {                                                           \
+        auto it = get_##CcType##_impls_.find(field->GetTag());                \
+        assert(it != get_##CcType##_impls_.end());                            \
+        return it->second(message);                                           \
     }
 
     // Define Getter resgisterers
@@ -122,63 +126,6 @@ public:
     DEFINE_FOR(Message*, Message)
 
 #undef DEFINE_FOR  // Define Registerer
-
-    /*
-    void RegisterMutableMessage(
-            const FieldDescriptor& field, const MutableFn& mut_getter) {
-        uint32_t tag = field.GetTag();
-        mutable_Message_impls_[tag] = mut_getter;
-        get_Message_impls_[tag] = getter;
-    }
-
-        void RegisterMutableMessage(
-                const FieldDescriptor& field, const MutableFn& mut_getter) {
-            uint32_t tag = field.GetTag();
-            mutable_Message_impls_[tag] = mut_getter;
-            get_Message_impls_[tag] = getter;
-        }
-        */
-    /*
-        void RegisterEnumField(
-                const FieldDescriptor& field,
-                const SetterFn<int>& enum_value_setter,
-                const GetterFn<int>& enum_value_getter) {
-            uint32_t tag = field.GetTag();
-            set_EnumValue_impls_[tag] = enum_value_setter;
-            get_EnumValue_impls_[tag] = enum_value_getter;
-        }
-    */
-    ////
-    // Define setters.
-    // Don't try to share a macro to generate both setter/getter and
-    // similars. We prefer readability rather than writability.
-
-#define DEFINE_FOR(cc_type, CcType)                                           \
-    void Set##CcType(                                                         \
-            Message* message, const FieldDescriptor* field, cc_type value)    \
-            const {                                                           \
-        auto it = set_##CcType##_impls_.find(field->GetTag());                \
-        assert(it != set_##CcType##_impls_.end());                            \
-        it->second(message, value);                                           \
-    }                                                                         \
-                                                                              \
-    cc_type Get##CcType(const Message* message, const FieldDescriptor* field) \
-            const {                                                           \
-        auto it = get_##CcType##_impls_.find(field->GetTag());                \
-        assert(it != get_##CcType##_impls_.end());                            \
-        return it->second(message);                                           \
-    }
-
-    DEFINE_FOR(uint64_t, UInt64)
-    DEFINE_FOR(int64_t, Int64)
-    DEFINE_FOR(uint32_t, UInt32)
-    DEFINE_FOR(int32_t, Int32)
-    DEFINE_FOR(double, Double)
-    DEFINE_FOR(float, Float)
-    DEFINE_FOR(bool, Bool)
-    DEFINE_FOR(const std::string&, String)
-
-#undef DEFINE_FOR  // Define setters/getters
 
     // Returns a mutable field message associated with the
     // FieldDescriptor
