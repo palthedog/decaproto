@@ -70,19 +70,20 @@ func printReflection(m *descriptor.DescriptorProto, fp *FilePrinter, mp *Message
 			var t = template.Must(template.New("reg_msg_field").Parse(`
     {{.singleton_name}}->RegisterMessageField(
         decaproto::FieldDescriptor({{.tag}}, {{.field_type}}),
-		// Mutable getter
+        // Mutable getter
         [](Message* base_message) {
             {{.msg_full_name}}* message =
                 static_cast< {{.msg_full_name}} *>(base_message);
             return message->mutable_{{.field_name}} ();
         },
-		// Getter
+        // Getter
         [](const Message* base_message) {
             const {{.msg_full_name}}* message =
                 static_cast<const {{.msg_full_name}} *>(base_message);
             return message->{{.field_name}}();
         }
-	);`))
+    );
+    `))
 			var buf bytes.Buffer
 			t.Execute(&buf, map[string]string{
 				"singleton_name": singleton_name,
@@ -103,19 +104,20 @@ func printReflection(m *descriptor.DescriptorProto, fp *FilePrinter, mp *Message
 			var t = template.Must(template.New("reg_field").Parse(`
     {{.singleton_name}}->Register{{.CcType}}Field(
         decaproto::FieldDescriptor({{.tag}}, {{.field_type}}),
-	    // Setter
+        // Setter
         [](Message* base_message, {{.cc_arg_type}} value) {
             {{.msg_full_name}}* message =
-            static_cast< {{.msg_full_name}} *>(base_message);
+                static_cast< {{.msg_full_name}} *>(base_message);
             message->set_{{.field_name}} (value);
         },
-	    // Getter
+        // Getter
         [](const Message* base_message) {
             const {{.msg_full_name}}* message =
                 static_cast<const {{.msg_full_name}} *>(base_message);
             return message->{{.field_name}}();
         }
-	);`))
+    );
+    `))
 			var buf bytes.Buffer
 			t.Execute(&buf, map[string]string{
 				"singleton_name": singleton_name,

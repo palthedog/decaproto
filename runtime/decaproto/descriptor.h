@@ -34,6 +34,7 @@ enum FieldType {
     kGroup = 18,
 };
 
+// Descriptor for decaproto fields in messages
 class FieldDescriptor {
     uint32_t tag_;
     FieldType type_;
@@ -42,9 +43,6 @@ class FieldDescriptor {
     bool packed_;
 
 public:
-    FieldDescriptor() {
-    }
-
     // Primitive types
     FieldDescriptor(
         uint32_t tag,
@@ -74,6 +72,9 @@ public:
     }
 };
 
+// Descriptor for decaproto messages
+// There are singletons for each message type which is accessible through
+// YourMessage::GetDescriptor()
 class Descriptor {
     std::vector<FieldDescriptor> fields_;
 
