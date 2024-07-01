@@ -129,6 +129,8 @@ func getTypeNameInfo(f *descriptor.FieldDescriptorProto) TypeNameInfo {
 		info.cc_ret_type = cc_raw_type
 	}
 
+	// TODO: Consider removing this. It might be simple enough to just use the raw type as is
+	//     in generater codes.
 	if f.GetLabel() == descriptor.FieldDescriptorProto_LABEL_REPEATED {
 		info.cc_raw_type = "std::vector<" + info.cc_raw_type + ">"
 		info.cc_ret_type = "const std::vector<" + info.cc_ret_type + ">&"
@@ -157,19 +159,17 @@ func isPrimitiveType(f *descriptor.FieldDescriptorProto) bool {
 
 func processField(ctx *Context, msg_printer *MessagePrinter, f *descriptor.FieldDescriptorProto) {
 	type_name_info := getTypeNameInfo(f)
-	// TODO: Replace it with type_name_info so that we can share more logic across
-	// different types of fields
 	if f.GetLabel() == descriptor.FieldDescriptorProto_LABEL_REPEATED {
 		// repeated
 		if isPrimitiveType(f) {
 			// primitive types
-			addRepeatedPrimitiveField(f, &type_name_info, msg_printer)
+			addRepeatedField(f, &type_name_info, msg_printer)
 		} else if f.GetType() == descriptor.FieldDescriptorProto_TYPE_STRING {
 			// string
-			addRepeatedPrimitiveField(f, &type_name_info, msg_printer)
+			addRepeatedField(f, &type_name_info, msg_printer)
 		} else if f.GetType() == descriptor.FieldDescriptorProto_TYPE_ENUM {
 			// enum
-			addRepeatedPrimitiveField(f, &type_name_info, msg_printer)
+			addRepeatedField(f, &type_name_info, msg_printer)
 		} else {
 			log.Fatal("Unsupported repeated field type", f.GetType(), f.GetName())
 		}
@@ -255,7 +255,7 @@ func addStringField(f *descriptor.FieldDescriptorProto, type_name_info *TypeName
 			args))
 }
 
-func addRepeatedPrimitiveField(f *descriptor.FieldDescriptorProto, type_name_info *TypeNameInfo, msg_printer *MessagePrinter) {
+func addRepeatedField(f *descriptor.FieldDescriptorProto, type_name_info *TypeNameInfo, msg_printer *MessagePrinter) {
 	args := map[string]string{
 		"cpp_type":    type_name_info.cc_raw_type,
 		"holder_name": holderName(f),
