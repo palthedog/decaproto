@@ -180,9 +180,14 @@ public:
                 CastForGetEnumValue(&ReflectionTestMessage::enum_field));
 
         // repeated uint32 rep_nums = 4
+        /*
         kTestReflection->RegisterGetRepeatedUInt32(
                 kRepNumsTag, MsgCast(&ReflectionTestMessage::rep_nums));
         kTestReflection->RegisterMutableRepeatedUInt32(
+                kRepNumsTag, MsgCast(&ReflectionTestMessage::mutable_rep_nums));
+                */
+
+        kTestReflection->RegisterMutableRepeatedRef(
                 kRepNumsTag, MsgCast(&ReflectionTestMessage::mutable_rep_nums));
 
         return kTestReflection;
@@ -296,7 +301,7 @@ TEST(ReflectionTest, GetRepeatedFieldTest) {
 
     // Get and test elements through reflection
     const vector<uint32_t>& nums =
-            reflection->GetRepeatedUInt32(&m, kRepNumsTag);
+            reflection->GetRepeatedRef<uint32_t>(&m, kRepNumsTag);
     EXPECT_EQ(3, nums.size());
     EXPECT_EQ(10, nums[0]);
     EXPECT_EQ(20, nums[1]);
@@ -310,7 +315,8 @@ TEST(ReflectionTest, SetRepeatedFieldTest) {
     EXPECT_EQ(0, m.rep_nums().size());
 
     // Push values through reflection
-    vector<uint32_t>* nums = reflection->MutableRepeatedUInt32(&m, kRepNumsTag);
+    vector<uint32_t>* nums =
+            reflection->MutableRepeatedRef<uint32_t>(&m, kRepNumsTag);
     nums->push_back(10);
     nums->push_back(20);
     nums->push_back(30);

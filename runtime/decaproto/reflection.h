@@ -22,6 +22,8 @@ class Reflection final {
     template <typename T>
     using MutableFn = std::function<T(Message*)>;
 
+    // TODO: Consider adding/using a single field accessor to implement both so
+    // that we can half the memory consumption.
 #define DEFINE_FOR(cc_type, CcType)                              \
     std::map<uint32_t, SetterFn<cc_type>> set_##CcType##_impls_; \
     std::map<uint32_t, GetterFn<cc_type>> get_##CcType##_impls_;
@@ -41,14 +43,12 @@ class Reflection final {
 
 #undef DEFINE_FOR
 
-    // For Message fields
-    // std::map<uint32_t, MutableFn<Message*>> mutable_Message_impls_;
-    // std::map<uint32_t, GetterFn<const Message&>> get_Message_impls_;
+    // Holds mutable getters for repeated fields.
+    // We use it for also for const-getters so that we can reduce the RAM
+    // usage.
+    std::map<uint32_t, MutableFn<void*>> get_RepeatedRef_impls_;
 
-    // For String fields
-    // std::map<uint32_t, SetterFn<const string&>> set_String_impls_;
-    // std::map<uint32_t, GetterFn<const string&>> get_String_impls_;
-
+private:
     // For fields which we shouldn't copy
     // We provide a mutable getter and getter which returns a reference
 #define DEFINE_FOR(cc_type, CcType)                                    \
@@ -64,7 +64,6 @@ class Reflection final {
     DEFINE_FOR(std::vector<float>, RepeatedFloat)
     DEFINE_FOR(std::vector<bool>, RepeatedBool)
     DEFINE_FOR(std::vector<std::string>, RepeatedString)
-
 #undef DEFINE_FOR
 
 public:
@@ -134,16 +133,28 @@ public:
 
     // Define Getter resgisterers
     DEFINE_FOR(Message, Message)
-    DEFINE_FOR(std::vector<uint64_t>, RepeatedUInt64)
-    DEFINE_FOR(std::vector<int64_t>, RepeatedInt64)
-    DEFINE_FOR(std::vector<uint32_t>, RepeatedUInt32)
-    DEFINE_FOR(std::vector<int32_t>, RepeatedInt32)
-    DEFINE_FOR(std::vector<double>, RepeatedDouble)
-    DEFINE_FOR(std::vector<float>, RepeatedFloat)
-    DEFINE_FOR(std::vector<bool>, RepeatedBool)
-    DEFINE_FOR(std::vector<std::string>, RepeatedString)
 
 #undef DEFINE_FOR  // Define Registerer
+
+    void RegisterMutableRepeatedRef(
+            uint32_t tag, const MutableFn<void*>& getter) {
+        get_RepeatedRef_impls_[tag] = getter;
+    }
+
+    template <typename T>
+    std::vector<T>* MutableRepeatedRef(Message* message, uint32_t tag) const {
+        auto it = get_RepeatedRef_impls_.find(tag);
+        assert(it != get_RepeatedRef_impls_.end());
+        const MutableFn<void*>& getter = it->second;
+        void* v_ptr = getter(message);
+        return static_cast<std::vector<T>*>(v_ptr);
+    }
+
+    template <typename T>
+    const std::vector<T>& GetRepeatedRef(
+            const Message* message, uint32_t tag) const {
+        return *MutableRepeatedRef<T>(const_cast<Message*>(message), tag);
+    }
 };
 
 }  // namespace decaproto

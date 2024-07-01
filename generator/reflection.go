@@ -28,9 +28,22 @@ func printReflection(m *descriptor.DescriptorProto, fp *FilePrinter, mp *Message
 		src += "    "
 		type_name := getTypeNameInfo(f)
 		tag_str := fmt.Sprintf("%d", f.GetNumber())
-		if f.GetType() == descriptor.FieldDescriptorProto_TYPE_ENUM {
-			if f.GetLabel() != descriptor.FieldDescriptorProto_LABEL_REPEATED {
-				src += print("reg_enum_field", `
+
+		if f.GetLabel() == descriptor.FieldDescriptorProto_LABEL_REPEATED {
+			src += print("reg_repeated_field", `
+			// Mutable getter for {{.field_name}}
+			{{.singleton_name}}->RegisterMutableRepeatedRef(
+				{{.tag}},
+				decaproto::MsgCast(&{{.msg_full_name}}::mutable_{{.field_name}}));
+		`,
+				map[string]string{
+					"singleton_name": singleton_name,
+					"tag":            tag_str,
+					"msg_full_name":  msg_full_name,
+					"field_name":     f.GetName(),
+				})
+		} else if f.GetType() == descriptor.FieldDescriptorProto_TYPE_ENUM {
+			src += print("reg_enum_field", `
     // EnumValue setter for {{.field_name}}
      {{.singleton_name}}->RegisterSetEnumValue(
         {{.tag}},
@@ -40,35 +53,28 @@ func printReflection(m *descriptor.DescriptorProto, fp *FilePrinter, mp *Message
         {{.tag}},
 		decaproto::CastForGetEnumValue(&{{.msg_full_name}}::{{.field_name}}));
 `,
-					map[string]string{
-						"singleton_name": singleton_name,
-						"tag":            tag_str,
-						"cc_arg_type":    type_name.cc_arg_type,
-						"cc_camel_name":  type_name.cc_camel_name,
-						"msg_full_name":  msg_full_name,
-						"field_name":     f.GetName(),
-					})
-			} else {
-				// TODO: Support repeated enum
-			}
-		} else if f.GetType() == descriptor.FieldDescriptorProto_TYPE_MESSAGE ||
-			f.GetLabel() == descriptor.FieldDescriptorProto_LABEL_REPEATED {
-			// Message and repeated message should be accessed via
+				map[string]string{
+					"singleton_name": singleton_name,
+					"tag":            tag_str,
+					"msg_full_name":  msg_full_name,
+					"field_name":     f.GetName(),
+				})
+		} else if f.GetType() == descriptor.FieldDescriptorProto_TYPE_MESSAGE {
+			// Message should be accessed via
 			// getter and mutable getter
 			src += print("reg_msg_field", `
     // Mutable getter for {{.field_name}}
-    {{.singleton_name}}->RegisterMutable{{.cc_camel_name}}(
+    {{.singleton_name}}->RegisterMutableMessage(
         {{.tag}},
 		decaproto::MsgCast(&{{.msg_full_name}}::mutable_{{.field_name}}));
     // Getter for {{.field_name}}
-    {{.singleton_name}}->RegisterGet{{.cc_camel_name}}(
+    {{.singleton_name}}->RegisterGetMessage(
         {{.tag}},
 		decaproto::MsgCast(&{{.msg_full_name}}::{{.field_name}}));
 `,
 				map[string]string{
 					"singleton_name": singleton_name,
 					"tag":            tag_str,
-					"cc_arg_type":    type_name.cc_arg_type,
 					"cc_camel_name":  type_name.cc_camel_name,
 					"msg_full_name":  msg_full_name,
 					"field_name":     f.GetName(),
@@ -88,7 +94,6 @@ func printReflection(m *descriptor.DescriptorProto, fp *FilePrinter, mp *Message
 					"singleton_name": singleton_name,
 					"CcType":         type_name.cc_camel_name,
 					"tag":            tag_str,
-					"cc_arg_type":    type_name.cc_arg_type,
 					"msg_full_name":  msg_full_name,
 					"field_name":     f.GetName(),
 				})

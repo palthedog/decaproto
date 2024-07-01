@@ -20,39 +20,27 @@ type TypeNameInfo struct {
 
 	// in native C++ codes w/o any qualifiers
 	// e.g. uint64_t, int32_t, std::string
-	cc_raw_type string
-
-	// in native C++ codes. when used as a return value for getters
-	// e.g. uint64_t, int32_t, std::string
-	cc_ret_type string
-
-	// in native C++ codes. when used as a const value
-	// e.g. uint64_t, int32_t, const std::string&
-	cc_arg_type string
+	cc_type string
 
 	// for camel case C++ type
 	// e.g. UInt64, Int32, String
 	cc_camel_name string
 }
 
-func NewPrimitiveTypeNameInfo(proto_name, deca_enum_name, cc_raw_type, cc_camel_name string) TypeNameInfo {
+func NewPrimitiveTypeNameInfo(proto_name, deca_enum_name, cc_type, cc_camel_name string) TypeNameInfo {
 	return TypeNameInfo{
 		proto_name:     proto_name,
 		deca_enum_name: "decaproto::FieldType::" + deca_enum_name,
-		cc_raw_type:    cc_raw_type,
-		cc_ret_type:    cc_raw_type,
-		cc_arg_type:    cc_raw_type,
+		cc_type:        cc_type,
 		cc_camel_name:  cc_camel_name,
 	}
 }
 
-func NewObjectTypeNameInfo(proto_name, deca_enum_name, cc_raw_type, cc_camel_name string) TypeNameInfo {
+func NewObjectTypeNameInfo(proto_name, deca_enum_name, cc_type, cc_camel_name string) TypeNameInfo {
 	return TypeNameInfo{
 		proto_name:     proto_name,
 		deca_enum_name: "decaproto::FieldType::" + deca_enum_name,
-		cc_raw_type:    cc_raw_type,
-		cc_ret_type:    "const " + cc_raw_type + "&",
-		cc_arg_type:    "const " + cc_raw_type + "&",
+		cc_type:        cc_type,
 		cc_camel_name:  cc_camel_name,
 	}
 }
@@ -62,9 +50,7 @@ func NewGeneratedTypeNameInfo(deca_enum_name, cc_camel_name string) TypeNameInfo
 	return TypeNameInfo{
 		proto_name:     n_a,
 		deca_enum_name: "decaproto::FieldType::" + deca_enum_name,
-		cc_raw_type:    n_a,
-		cc_ret_type:    n_a,
-		cc_arg_type:    n_a,
+		cc_type:        n_a,
 		cc_camel_name:  cc_camel_name,
 	}
 }
@@ -110,34 +96,20 @@ func getTypeNameInfo(f *descriptor.FieldDescriptorProto) TypeNameInfo {
 		// .OuterMessage.NestedMessage
 		proto_type_name := f.GetTypeName()
 		// ::OuterMessage::NestedMessage
-		cc_raw_type := strings.Join(strings.Split(proto_type_name, "."), "::")
+		cc_type := strings.Join(strings.Split(proto_type_name, "."), "::")
 		// Access Message objects via const reference
 		info.proto_name = proto_type_name
-		info.cc_raw_type = cc_raw_type
-		info.cc_arg_type = "const " + cc_raw_type + "&"
-		info.cc_ret_type = "const " + cc_raw_type + "&"
+		info.cc_type = cc_type
 	} else if f.GetType() == descriptor.FieldDescriptorProto_TYPE_ENUM {
 		// .MyEnum
 		// .OuterMessage.NestedEnum
 		proto_type_name := f.GetTypeName()
 		// ::OuterMessage::NestedEnum
-		cc_raw_type := strings.Join(strings.Split(proto_type_name, "."), "::")
+		cc_type := strings.Join(strings.Split(proto_type_name, "."), "::")
 		// Enum is copyable
 		info.proto_name = proto_type_name
-		info.cc_raw_type = cc_raw_type
-		info.cc_arg_type = cc_raw_type
-		info.cc_ret_type = cc_raw_type
+		info.cc_type = cc_type
 	}
-
-	// TODO: Consider removing this. It might be simple enough to just use the raw type as is
-	//     in generater codes.
-	if f.GetLabel() == descriptor.FieldDescriptorProto_LABEL_REPEATED {
-		info.cc_raw_type = "std::vector<" + info.cc_raw_type + ">"
-		info.cc_ret_type = "const std::vector<" + info.cc_ret_type + ">&"
-		info.cc_arg_type = "const std::vector<" + info.cc_arg_type + ">&"
-		info.cc_camel_name = "Repeated" + info.cc_camel_name
-	}
-
 	return info
 }
 
@@ -198,32 +170,30 @@ func holderName(f *descriptor.FieldDescriptorProto) string {
 
 func addPrimitiveField(f *descriptor.FieldDescriptorProto, type_name_info *TypeNameInfo, msg_printer *MessagePrinter) {
 	args := map[string]string{
-		"raw_type":    type_name_info.cc_raw_type,
-		"ret_type":    type_name_info.cc_ret_type,
-		"arg_type":    type_name_info.cc_arg_type,
+		"cc_type":     type_name_info.cc_type,
 		"holder_name": holderName(f),
 		"f_name":      f.GetName(),
 	}
 	msg_printer.PushInitializer(
-		print("init_default_values", "{{.holder_name}}({{.raw_type}}())", args))
+		print("init_default_values", "{{.holder_name}}({{.cc_type}}())", args))
 
 	msg_printer.PushPrivate(
 		print("pri_pri",
-			"    {{.raw_type}} {{.holder_name}};\n",
+			"    {{.cc_type}} {{.holder_name}};\n",
 			args))
 
 	msg_printer.PushPublic(
 		print("pub_pri", `
-	inline {{.ret_type}} {{.f_name}}() const {
+	inline {{.cc_type}} {{.f_name}}() const {
 	    return {{.holder_name}};
 	}
 
-	inline void set_{{.f_name}}( {{.arg_type}} value) {
+	inline void set_{{.f_name}}( {{.cc_type}} value) {
 	    {{.holder_name}} = value;
 	}
 
 	inline void clear_{{.f_name}}() {
-	    {{.holder_name}} = {{.raw_type}}();
+	    {{.holder_name}} = {{.cc_type}}();
 	}
 `,
 			args))
@@ -231,31 +201,29 @@ func addPrimitiveField(f *descriptor.FieldDescriptorProto, type_name_info *TypeN
 
 func addStringField(f *descriptor.FieldDescriptorProto, type_name_info *TypeNameInfo, msg_printer *MessagePrinter) {
 	args := map[string]string{
-		"raw_type":    type_name_info.cc_raw_type,
-		"ret_type":    type_name_info.cc_ret_type,
-		"arg_type":    type_name_info.cc_arg_type,
+		"cc_type":     type_name_info.cc_type,
 		"holder_name": holderName(f),
 		"f_name":      f.GetName(),
 	}
 	msg_printer.PushInitializer(
-		print("init_default_values", "{{.holder_name}}({{.raw_type}}())", args))
+		print("init_default_values", "{{.holder_name}}({{.cc_type}}())", args))
 
 	msg_printer.PushPrivate(
-		print("pri_str", "    {{.raw_type}} {{.holder_name}};\n", args))
+		print("pri_str", "    {{.cc_type}} {{.holder_name}};\n", args))
 
 	msg_printer.PushPublic(
 		print("pub_str", `
-	inline {{.ret_type}} {{.f_name}}() const {
+	inline const {{.cc_type}}& {{.f_name}}() const {
 	    return {{.holder_name}};
 	}
 
 	// TODO: Support string_view
-	inline void set_{{.f_name}}({{.arg_type}} value) {
+	inline void set_{{.f_name}}(const {{.cc_type}}& value) {
 	    {{.holder_name}} = value;
 	}
 
 	inline void clear_{{.f_name}}() {
-	    {{.holder_name}} = {{.raw_type}}();
+	    {{.holder_name}}.clear();
 	}
 `,
 			args))
@@ -263,7 +231,7 @@ func addStringField(f *descriptor.FieldDescriptorProto, type_name_info *TypeName
 
 func addRepeatedField(f *descriptor.FieldDescriptorProto, type_name_info *TypeNameInfo, msg_printer *MessagePrinter) {
 	args := map[string]string{
-		"cpp_type":    type_name_info.cc_raw_type,
+		"cc_type":     type_name_info.cc_type,
 		"holder_name": holderName(f),
 		"f_name":      f.GetName(),
 	}
@@ -272,15 +240,15 @@ func addRepeatedField(f *descriptor.FieldDescriptorProto, type_name_info *TypeNa
 		print("init_default_values", "{{.holder_name}}()", args))
 
 	msg_printer.PushPrivate(
-		print("pri_rep_pri", "    {{.cpp_type}} {{.holder_name}};\n", args))
+		print("pri_rep_pri", "    std::vector<{{.cc_type}}> {{.holder_name}};\n", args))
 
 	msg_printer.PushPublic(
 		print("pub_rep_pri", `
-	inline const {{.cpp_type}}& {{.f_name}}() const {
+	inline const std::vector<{{.cc_type}}>& {{.f_name}}() const {
 	    return {{.holder_name}};
 	}
 
-	inline {{.cpp_type}}* mutable_{{.f_name}}() {
+	inline std::vector<{{.cc_type}}>* mutable_{{.f_name}}() {
 		return &{{.holder_name}};
 	}
 
@@ -294,8 +262,7 @@ func addRepeatedField(f *descriptor.FieldDescriptorProto, type_name_info *TypeNa
 
 func addMessageField(f *descriptor.FieldDescriptorProto, type_name *TypeNameInfo, msg_printer *MessagePrinter) {
 	args := map[string]string{
-		"raw_type":    type_name.cc_raw_type,
-		"ret_type":    type_name.cc_ret_type,
+		"cc_type":     type_name.cc_type,
 		"holder_name": holderName(f),
 		"f_name":      f.GetName(),
 	}
@@ -305,27 +272,31 @@ func addMessageField(f *descriptor.FieldDescriptorProto, type_name *TypeNameInfo
 
 	msg_printer.PushPrivate(
 		print("pri_rep_pri",
-			"    std::unique_ptr<{{.raw_type}}> {{.holder_name}};\n",
+			"    std::unique_ptr<{{.cc_type}}> {{.holder_name}};\n",
 			args))
 
 	msg_printer.PushPublic(
 		print("pub_rep_pri",
 			`
-	{{.ret_type}} {{.f_name}}() const {
+	// Getter for {{.f_name}}
+	const {{.cc_type}}& {{.f_name}}() const {
 	    return *{{.holder_name}};
 	}
 
-	{{.raw_type}}* mutable_{{.f_name}}() {
+	// Mutable Getter for {{.f_name}}
+	{{.cc_type}}* mutable_{{.f_name}}() {
 	    if (!{{.holder_name}}) {
-			{{.holder_name}} = std::make_unique<{{.raw_type}}>();
+			{{.holder_name}} = std::make_unique<{{.cc_type}}>();
         }
 	    return {{.holder_name}}.get();
 	}
 
+	// Hazzer for {{.f_name}}
 	bool has_{{.f_name}}() const {
 	    return (bool){{.holder_name}};
 	}
 
+	// Clearer for {{.f_name}}
 	void clear_{{.f_name}}() {
 	    {{.holder_name}}.reset();
 	}

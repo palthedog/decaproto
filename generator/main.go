@@ -81,13 +81,12 @@ func (mp *MessagePrinter) printClassDefinition() string {
 	out += "public:\n"
 
 	// Constructor
-	out += "    " + mp.full_name + "()\n"
+	out += "    " + mp.full_name + "()"
 	if len(mp.init_default_values) > 0 {
 		out += "\n        : "
 		out += strings.Join(mp.init_default_values, "\n        , ")
-		out += "\n"
 	}
-	out += "{}\n"
+	out += " {}\n\n"
 
 	// Destructor
 	out += "    ~" + mp.full_name + "() {}\n"
