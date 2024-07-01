@@ -14,7 +14,7 @@ deca_proto_library(
     name = "test_deca_proto",
     protos = [":test_proto"],
     deps = [
-        "//runtime/decaproto:decaproto",
+        "//runtime/decaproto",
     ],
 )
 
@@ -23,8 +23,8 @@ cc_test(
     size = "small",
     srcs = ["simple_test.cc"],
     deps = [
-        "//runtime/decaproto:decaproto",
         ":test_deca_proto",
+        "//runtime/decaproto",
         "@googletest//:gtest_main",
     ],
 )
@@ -34,8 +34,8 @@ cc_test(
     size = "small",
     srcs = ["repeated_test.cc"],
     deps = [
-        "//runtime/decaproto:decaproto",
         ":test_deca_proto",
+        "//runtime/decaproto",
         "@googletest//:gtest_main",
     ],
 )
@@ -45,8 +45,8 @@ cc_test(
     size = "small",
     srcs = ["def_order_test.cc"],
     deps = [
-        "//runtime/decaproto:decaproto",
         ":test_deca_proto",
+        "//runtime/decaproto",
         "@googletest//:gtest_main",
     ],
 )
@@ -58,6 +58,7 @@ proto_library(
         "nested.proto",
         "repeated.proto",
         "simple.proto",
+        "simple_proto2.proto",
     ],
     visibility = ["//visibility:public"],
 )

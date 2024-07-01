@@ -12,8 +12,10 @@ go_binary(
 go_library(
     name = "generator_lib",
     srcs = [
+        "descriptor.go",
         "field.go",
         "main.go",
+        "reflection.go",
         "template.go",
     ],
     importpath = "github.com/palthedog/decaproto/generator",
