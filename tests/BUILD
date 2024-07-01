@@ -51,6 +51,17 @@ cc_test(
     ],
 )
 
+cc_test(
+    name = "generated_reflection_test",
+    size = "small",
+    srcs = ["generated_reflection_test.cc"],
+    deps = [
+        ":test_deca_proto",
+        "//runtime/decaproto",
+        "@googletest//:gtest_main",
+    ],
+)
+
 proto_library(
     name = "tests_proto",
     srcs = [
