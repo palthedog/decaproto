@@ -15,19 +15,6 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
-func parseReq(r io.Reader) (*plugin.CodeGeneratorRequest, error) {
-	buf, err := io.ReadAll(r)
-	if err != nil {
-		return nil, err
-	}
-
-	var req plugin.CodeGeneratorRequest
-	if err = proto.Unmarshal(buf, &req); err != nil {
-		return nil, err
-	}
-	return &req, nil
-}
-
 func processEnum(ctx *Context, m *descriptor.EnumDescriptorProto) {
 	ctx.pushPackage(m.GetName())
 
@@ -358,6 +345,21 @@ func processReq(req *plugin.CodeGeneratorRequest) *plugin.CodeGeneratorResponse 
 	var resp plugin.CodeGeneratorResponse
 	for _, fname := range req.FileToGenerate {
 		f := files[fname]
+
+		if f.GetSyntax() != "proto3" {
+			syntax := f.GetSyntax()
+			if syntax == "" {
+				syntax = "proto2"
+			}
+
+			fmt.Fprintf(os.Stderr,
+				"WARNING: Decaproto supports proto3 only, but %s is %s\n",
+				f.GetName(),
+				syntax)
+			fmt.Fprintf(os.Stderr, "Basic functionality should work but some behaviours about field presense (e.g. has_*, default value) would be different"+
+				" from the original proto2 compiler.\n")
+		}
+
 		out_file_name := outputName(f)
 		header_file_name := out_file_name + ".h"
 
@@ -412,6 +414,19 @@ func emitResp(resp *plugin.CodeGeneratorResponse) error {
 	}
 	_, err = os.Stdout.Write(buf)
 	return err
+}
+
+func parseReq(r io.Reader) (*plugin.CodeGeneratorRequest, error) {
+	buf, err := io.ReadAll(r)
+	if err != nil {
+		return nil, err
+	}
+
+	var req plugin.CodeGeneratorRequest
+	if err = proto.Unmarshal(buf, &req); err != nil {
+		return nil, err
+	}
+	return &req, nil
 }
 
 func run() error {

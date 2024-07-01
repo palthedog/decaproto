@@ -1,0 +1,22 @@
+syntax = "proto2";
+
+// TODO: Support required field?
+// It's super low priority because I personally dislike required fields
+
+message OtherProto2 {
+  optional int32 other_num = 1;
+}
+
+message SimpleProto2 {
+  optional int32 num = 1;
+  optional string str = 2;
+  optional SimpleProto2Enum enum_value = 3;
+  optional OtherProto2 other = 4;
+}
+
+enum SimpleProto2Enum {
+  // UNKNOWN = 0;
+  ENUM2_A = 1;
+  ENUM2_B = 2;
+  ENUM2_C = 3;
+}
