@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	descriptor "github.com/golang/protobuf/protoc-gen-go/descriptor"
+	"os"
 )
 
 func printReflection(m *descriptor.DescriptorProto, fp *FilePrinter, mp *MessagePrinter) {
@@ -72,7 +73,7 @@ func printReflection(m *descriptor.DescriptorProto, fp *FilePrinter, mp *Message
 					"msg_full_name":  msg_full_name,
 					"field_name":     f.GetName(),
 				})
-		} else if isPrimitiveType(f) {
+		} else if isPrimitiveType(f) || f.GetType() == descriptor.FieldDescriptorProto_TYPE_STRING {
 			src += print("reg_field", `
     // Setter
     {{.singleton_name}}->RegisterSet{{.CcType}}(
@@ -91,6 +92,8 @@ func printReflection(m *descriptor.DescriptorProto, fp *FilePrinter, mp *Message
 					"msg_full_name":  msg_full_name,
 					"field_name":     f.GetName(),
 				})
+		} else {
+			fmt.Fprintf(os.Stderr, "Unsupported to generate Reflection for field: %s, type: %s\n", f.GetName(), f.GetType())
 		}
 	}
 	src += "    return " + singleton_name + ";\n"

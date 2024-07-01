@@ -37,8 +37,6 @@ class Reflection final {
     DEFINE_FOR(float, Float)
     DEFINE_FOR(bool, Bool)
     DEFINE_FOR(int, EnumValue)
-    // TODO: We may want a special handling for string?
-    // like string_view or something?
     DEFINE_FOR(const std::string&, String)
 
 #undef DEFINE_FOR
@@ -47,11 +45,9 @@ class Reflection final {
     // std::map<uint32_t, MutableFn<Message*>> mutable_Message_impls_;
     // std::map<uint32_t, GetterFn<const Message&>> get_Message_impls_;
 
-    // For Enum fields
-    // TODO: Implement EnumValueDescriptor so that callers can access
-    // more information about the enum value.
-    // std::map<uint32_t, SetterFn<int>> set_EnumValue_impls_;
-    // std::map<uint32_t, GetterFn<int>> get_EnumValue_impls_;
+    // For String fields
+    // std::map<uint32_t, SetterFn<const string&>> set_String_impls_;
+    // std::map<uint32_t, GetterFn<const string&>> get_String_impls_;
 
     // For fields which we shouldn't copy
     // We provide a mutable getter and getter which returns a reference

@@ -27,7 +27,6 @@ const uint32_t kMessageTag = 4;
 TEST(ReflectionTest, DescriptorTest) {
     SimpleMessage m;
 
-    const Reflection* reflection = m.GetReflection();
     const Descriptor* descriptor = m.GetDescriptor();
 
     EXPECT_EQ(4, descriptor->GetFields().size());
@@ -46,8 +45,6 @@ TEST(ReflectionTest, DescriptorTest) {
             FindFieldDescriptor(descriptor, kMessageTag).GetType());
 }
 
-// Tests generated Descriptor
-// See simple.proto for the definition of SimpleMessage
 TEST(ReflectionTest, AccessNumTest) {
     SimpleMessage m;
 
@@ -55,7 +52,6 @@ TEST(ReflectionTest, AccessNumTest) {
     EXPECT_EQ(0, m.num());
 
     const Reflection* reflection = m.GetReflection();
-    const Descriptor* descriptor = m.GetDescriptor();
 
     EXPECT_EQ(0, reflection->GetInt32(&m, kNumTag));
 
@@ -63,4 +59,31 @@ TEST(ReflectionTest, AccessNumTest) {
     reflection->SetInt32(&m, kNumTag, 100);
 
     EXPECT_EQ(100, reflection->GetInt32(&m, kNumTag));
+}
+
+TEST(ReflectionTest, AccessStrTest) {
+    SimpleMessage m;
+
+    // Easy way
+    EXPECT_EQ("", m.str());
+
+    const Reflection* reflection = m.GetReflection();
+
+    EXPECT_EQ("", reflection->GetString(&m, kStrTag));
+
+    // Set num through reflection
+    reflection->SetString(&m, kStrTag, "udon");
+
+    EXPECT_EQ("udon", reflection->GetString(&m, kStrTag));
+}
+
+TEST(ReflectionTest, StringNotCopiedTest) {
+    SimpleMessage m;
+
+    const Reflection* reflection = m.GetReflection();
+
+    // reflection->SetString(&m, kStrTag, "udon");
+
+    // Compare pointers to check that both getters don't copy the string
+    // EXPECT_EQ(&m.str(), &reflection->GetString(&m, kStrTag));
 }
