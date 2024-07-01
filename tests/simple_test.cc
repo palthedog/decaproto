@@ -10,7 +10,7 @@ TEST(SimpleTest, NumTest) {
     EXPECT_EQ(100, m.num());
 
     m.clear_num();
-    EXPECT_FALSE(m.has_num());
+    EXPECT_EQ(0, m.num());
 }
 
 TEST(SimpleTest, StrTest) {
@@ -21,7 +21,7 @@ TEST(SimpleTest, StrTest) {
     EXPECT_EQ("foo bar", m.str());
 
     m.clear_str();
-    EXPECT_FALSE(m.has_str());
+    EXPECT_EQ("", m.str());
 }
 
 TEST(SimpleTest, EnumTest) {
@@ -33,7 +33,7 @@ TEST(SimpleTest, EnumTest) {
     EXPECT_EQ(SimpleEnum::ENUM_A, m.enum_value());
 
     m.clear_enum_value();
-    EXPECT_FALSE(m.has_enum_value());
+    EXPECT_EQ(0, m.enum_value());
 }
 
 TEST(SimpleTest, MessageTest) {

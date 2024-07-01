@@ -20,7 +20,7 @@ func processEnum(ctx *Context, m *descriptor.EnumDescriptorProto) {
 
 	var out string = ""
 	full_name := strings.Join(ctx.cpp_nested_pkg, "_")
-	out += "enum " + full_name + " {\n"
+	out += "enum " + full_name + " : int {\n"
 	for _, field := range m.GetValue() {
 		out += fmt.Sprintf("    %s = %d,\n", field.GetName(), field.GetNumber())
 	}
@@ -356,8 +356,9 @@ func processReq(req *plugin.CodeGeneratorRequest) *plugin.CodeGeneratorResponse 
 				"WARNING: Decaproto supports proto3 only, but %s is %s\n",
 				f.GetName(),
 				syntax)
-			fmt.Fprintf(os.Stderr, "Basic functionality should work but some behaviours about field presense (e.g. has_*, default value) would be different"+
-				" from the original proto2 compiler.\n")
+			fmt.Fprintf(os.Stderr, "    Basic functionality should work but "+
+				"some behaviours about field presense (e.g. has_*, default value)"+
+				"would be different from the original proto2 compiler.\n")
 		}
 
 		out_file_name := outputName(f)

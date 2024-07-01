@@ -202,8 +202,6 @@ func processField(ctx *Context, msg_printer *MessagePrinter, f *descriptor.Field
 func addPrimitiveField(f *descriptor.FieldDescriptorProto, cpp_type string, msg_printer *MessagePrinter) {
 	const pri_template = `
 	{{.cpp_type}} {{.pri_name}};
-	bool has_{{.pri_name}};
-
 `
 
 	const pub_template = `
@@ -213,17 +211,10 @@ func addPrimitiveField(f *descriptor.FieldDescriptorProto, cpp_type string, msg_
 
 	inline void set_{{.f_name}}( {{.cpp_type}} value) {
 	    {{.pri_name}} = value;
-	    has_{{.pri_name}} = true;
-	}
-
-	inline bool has_{{.f_name}}() const {
-	    return has_{{.pri_name}};
 	}
 
 	inline void clear_{{.f_name}}() {
-	    // TODO: Support default value
 	    {{.pri_name}} = {{.cpp_type}}();
-	    has_{{.pri_name}} = false;
 	}
 
 `
@@ -257,8 +248,6 @@ func addPrimitiveField(f *descriptor.FieldDescriptorProto, cpp_type string, msg_
 func addStringField(f *descriptor.FieldDescriptorProto, cpp_type string, msg_printer *MessagePrinter) {
 	const pri_template = `
 	{{.cpp_type}} {{.pri_name}};
-	bool has_{{.pri_name}};
-
 `
 
 	const pub_template = `
@@ -269,19 +258,11 @@ func addStringField(f *descriptor.FieldDescriptorProto, cpp_type string, msg_pri
 	// TODO: Support string_view
 	inline void set_{{.f_name}}(const {{.cpp_type}}& value) {
 	    {{.pri_name}} = value;
-	    has_{{.pri_name}} = true;
-	}
-
-	inline bool has_{{.f_name}}() const {
-	    return has_{{.pri_name}};
 	}
 
 	inline void clear_{{.f_name}}() {
-	    // TODO: Support default value
 	    {{.pri_name}} = {{.cpp_type}}();
-	    has_{{.pri_name}} = false;
 	}
-
 `
 
 	pri_tpl, err := template.New("pri").Parse(pri_template)
