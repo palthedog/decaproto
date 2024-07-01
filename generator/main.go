@@ -77,11 +77,22 @@ func processMessage(ctx *Context, m *descriptor.DescriptorProto) {
 
 func (mp *MessagePrinter) printClassDefinition() string {
 	var out string = ""
-	out += "class " + mp.full_name + " : public decaproto::Message {\n"
+	out += "class " + mp.full_name + " final : public decaproto::Message {\n"
 	out += "public:\n"
-	out += "    " + mp.full_name + "() {}\n"
-	out += "    virtual ~" + mp.full_name + "() {}\n"
+
+	// Constructor
+	out += "    " + mp.full_name + "()\n"
+	if len(mp.init_default_values) > 0 {
+		out += "\n        : "
+		out += strings.Join(mp.init_default_values, "\n        , ")
+		out += "\n"
+	}
+	out += "{}\n"
+
+	// Destructor
+	out += "    ~" + mp.full_name + "() {}\n"
 	out += "\n"
+
 	out += mp.publics
 	out += "\n"
 	out += "private:\n"
@@ -139,6 +150,8 @@ type MessagePrinter struct {
 	privates string
 	publics  string
 
+	init_default_values []string
+
 	// TODO: We need one descriptor pinters per message
 	descriptor_printer *DescriptorPrinter
 }
@@ -159,6 +172,10 @@ func (mp *MessagePrinter) PushPrivate(str string) {
 
 func (mp *MessagePrinter) PushPublic(str string) {
 	mp.publics += str
+}
+
+func (mp *MessagePrinter) PushInitializer(str string) {
+	mp.init_default_values = append(mp.init_default_values, str)
 }
 
 type FilePrinter struct {

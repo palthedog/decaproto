@@ -17,7 +17,12 @@ const FieldDescriptor& FindFieldDescriptor(
             });
 }
 
-// Test generated Descriptor
+const uint32_t kNumTag = 1;
+const uint32_t kStrTag = 2;
+const uint32_t kEnumTag = 3;
+const uint32_t kMessageTag = 4;
+
+// Tests generated Descriptor
 // See simple.proto for the definition of SimpleMessage
 TEST(ReflectionTest, DescriptorTest) {
     SimpleMessage m;
@@ -27,9 +32,35 @@ TEST(ReflectionTest, DescriptorTest) {
 
     EXPECT_EQ(4, descriptor->GetFields().size());
 
-    EXPECT_EQ(FieldType::kInt32, FindFieldDescriptor(descriptor, 1).GetType());
-    EXPECT_EQ(FieldType::kString, FindFieldDescriptor(descriptor, 2).GetType());
-    EXPECT_EQ(FieldType::kEnum, FindFieldDescriptor(descriptor, 3).GetType());
     EXPECT_EQ(
-            FieldType::kMessage, FindFieldDescriptor(descriptor, 4).GetType());
+            FieldType::kInt32,
+            FindFieldDescriptor(descriptor, kNumTag).GetType());
+    EXPECT_EQ(
+            FieldType::kString,
+            FindFieldDescriptor(descriptor, kStrTag).GetType());
+    EXPECT_EQ(
+            FieldType::kEnum,
+            FindFieldDescriptor(descriptor, kEnumTag).GetType());
+    EXPECT_EQ(
+            FieldType::kMessage,
+            FindFieldDescriptor(descriptor, kMessageTag).GetType());
+}
+
+// Tests generated Descriptor
+// See simple.proto for the definition of SimpleMessage
+TEST(ReflectionTest, AccessNumTest) {
+    SimpleMessage m;
+
+    // Easy way
+    EXPECT_EQ(0, m.num());
+
+    const Reflection* reflection = m.GetReflection();
+    const Descriptor* descriptor = m.GetDescriptor();
+
+    EXPECT_EQ(0, reflection->GetInt32(&m, kNumTag));
+
+    // Set num through reflection
+    reflection->SetInt32(&m, kNumTag, 100);
+
+    EXPECT_EQ(100, reflection->GetInt32(&m, kNumTag));
 }

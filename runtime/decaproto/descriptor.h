@@ -35,7 +35,7 @@ enum FieldType {
 };
 
 // Descriptor for decaproto fields in messages
-class FieldDescriptor {
+class FieldDescriptor final {
     uint32_t tag_;
     FieldType type_;
 
@@ -75,7 +75,7 @@ public:
 // Descriptor for decaproto messages
 // There are singletons for each message type which is accessible through
 // YourMessage::GetDescriptor()
-class Descriptor {
+class Descriptor final {
     std::vector<FieldDescriptor> fields_;
 
 public:

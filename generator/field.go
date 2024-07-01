@@ -204,6 +204,9 @@ func addPrimitiveField(f *descriptor.FieldDescriptorProto, type_name_info *TypeN
 		"holder_name": holderName(f),
 		"f_name":      f.GetName(),
 	}
+	msg_printer.PushInitializer(
+		print("init_default_values", "{{.holder_name}}({{.raw_type}}())", args))
+
 	msg_printer.PushPrivate(
 		print("pri_pri",
 			"    {{.raw_type}} {{.holder_name}};\n",
@@ -234,6 +237,9 @@ func addStringField(f *descriptor.FieldDescriptorProto, type_name_info *TypeName
 		"holder_name": holderName(f),
 		"f_name":      f.GetName(),
 	}
+	msg_printer.PushInitializer(
+		print("init_default_values", "{{.holder_name}}({{.raw_type}}())", args))
+
 	msg_printer.PushPrivate(
 		print("pri_str", "    {{.raw_type}} {{.holder_name}};\n", args))
 
@@ -261,6 +267,10 @@ func addRepeatedField(f *descriptor.FieldDescriptorProto, type_name_info *TypeNa
 		"holder_name": holderName(f),
 		"f_name":      f.GetName(),
 	}
+
+	msg_printer.PushInitializer(
+		print("init_default_values", "{{.holder_name}}()", args))
+
 	msg_printer.PushPrivate(
 		print("pri_rep_pri", "    {{.cpp_type}} {{.holder_name}};\n", args))
 
@@ -289,6 +299,10 @@ func addMessageField(f *descriptor.FieldDescriptorProto, type_name *TypeNameInfo
 		"holder_name": holderName(f),
 		"f_name":      f.GetName(),
 	}
+
+	msg_printer.PushInitializer(
+		print("init_default_values", "{{.holder_name}}()", args))
+
 	msg_printer.PushPrivate(
 		print("pri_rep_pri",
 			"    std::unique_ptr<{{.raw_type}}> {{.holder_name}};\n",

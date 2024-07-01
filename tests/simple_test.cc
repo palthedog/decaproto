@@ -5,7 +5,9 @@
 TEST(SimpleTest, NumTest) {
     SimpleMessage m;
 
-    EXPECT_NE(100, m.num());
+    // Default value
+    EXPECT_EQ(0, m.num());
+
     m.set_num(100);
     EXPECT_EQ(100, m.num());
 
@@ -16,7 +18,9 @@ TEST(SimpleTest, NumTest) {
 TEST(SimpleTest, StrTest) {
     SimpleMessage m;
 
-    EXPECT_NE("foo bar", m.str());
+    // Default value
+    EXPECT_EQ("", m.str());
+
     m.set_str("foo bar");
     EXPECT_EQ("foo bar", m.str());
 
@@ -27,7 +31,9 @@ TEST(SimpleTest, StrTest) {
 TEST(SimpleTest, EnumTest) {
     SimpleMessage m;
 
-    // EXPECT_NE("foo bar", m.str());
+    // Default value
+    EXPECT_EQ(0, m.enum_value());
+
     EXPECT_NE(SimpleEnum::ENUM_A, m.enum_value());
     m.set_enum_value(SimpleEnum::ENUM_A);
     EXPECT_EQ(SimpleEnum::ENUM_A, m.enum_value());
@@ -39,7 +45,9 @@ TEST(SimpleTest, EnumTest) {
 TEST(SimpleTest, MessageTest) {
     SimpleMessage m;
 
+    // Default value is not set
     EXPECT_FALSE(m.has_other());
+
     OtherMessage* mut_other = m.mutable_other();
     mut_other->set_other_num(100);
 

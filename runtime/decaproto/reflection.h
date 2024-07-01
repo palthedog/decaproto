@@ -12,7 +12,7 @@ namespace decaproto {
 
 class Message;
 
-class Reflection {
+class Reflection final {
     template <typename T>
     using SetterFn = std::function<void(Message*, T)>;
 
