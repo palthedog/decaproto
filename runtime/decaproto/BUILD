@@ -6,8 +6,8 @@ cc_library(
     ],
     hdrs = [
         "decoder.h",
-        "encoder.h"
         "descriptor.h",
+        "encoder.h",
         "message.h",
         "reflection.h",
         "reflection_util.h",

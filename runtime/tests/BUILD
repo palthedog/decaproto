@@ -42,3 +42,15 @@ cc_test(
         "@googletest//:gtest_main",
     ],
 )
+
+cc_test(
+    name = "encoder_test",
+    size = "small",
+    srcs = ["encoder_test.cc"],
+    deps = [
+        ":fake_message",
+        "//runtime/decaproto",
+        "//runtime/decaproto/stream",
+        "@googletest//:gtest_main",
+    ],
+)

@@ -22,6 +22,9 @@ class FakeOtherMessage : public decaproto::Message {
     uint32_t num_;
 
 public:
+    FakeOtherMessage() : num_(0) {
+    }
+
     uint32_t num() const {
         return num_;
     }
@@ -57,7 +60,8 @@ class FakeMessage : public decaproto::Message {
     std::vector<uint32_t> rep_nums_;
 
 public:
-    FakeMessage() {
+    FakeMessage()
+        : num_(0), str_(""), other_(nullptr), enum_field_(FakeEnum::UNKNOWN) {
     }
 
     ~FakeMessage() {

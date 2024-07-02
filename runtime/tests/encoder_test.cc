@@ -1,0 +1,77 @@
+#include "decaproto/encoder.h"
+
+#include <gtest/gtest.h>
+
+#include <sstream>
+
+#include "decaproto/stream/coded_stream.h"
+#include "decaproto/stream/stl_stream_wrapper.h"
+#include "decaproto/stream/stream.h"
+#include "fake_message.h"
+
+using namespace decaproto;
+using namespace std;
+
+TEST(EncoderTest, VarintSizeTest) {
+    FakeMessage m;
+    m.set_num(150);
+
+    // tag(1) + varint(2
+    EXPECT_EQ(3, ComputeEncodedSize(m));
+}
+
+TEST(EncoderTest, DefaultVarintSizeTest) {
+    FakeMessage m;
+    m.set_num(0);
+
+    EXPECT_EQ(0, ComputeEncodedSize(m));
+}
+
+TEST(EncoderTest, StringSizeTest) {
+    FakeMessage m;
+    m.set_str("testing");
+
+    // tag(1) + len(1) + value(7)
+    EXPECT_EQ(9, ComputeEncodedSize(m));
+}
+
+TEST(EncoderTest, DefaultStringSizeTest) {
+    FakeMessage m;
+    m.set_str("");
+
+    EXPECT_EQ(0, ComputeEncodedSize(m));
+}
+
+TEST(EncoderTest, RepeatedNumSizeTest) {
+    FakeMessage m;
+    m.mutable_rep_nums()->push_back(10);
+    m.mutable_rep_nums()->push_back(150);
+    m.mutable_rep_nums()->push_back(20);
+
+    // tag(1) + varint(1) + tag(1) + varint(2) + tag(1) + varint(1)
+    EXPECT_EQ(7, ComputeEncodedSize(m));
+}
+
+TEST(EncoderTest, RepeatedNumWithDefaultValueSizeTest) {
+    FakeMessage m;
+    m.mutable_rep_nums()->push_back(10);
+    // Default value.
+    // Since this is a repeated field, the default value should be encoded as
+    // well
+    m.mutable_rep_nums()->push_back(0);
+    m.mutable_rep_nums()->push_back(20);
+
+    // tag(1) + varint(1) + tag(1) + varint(1) + tag(1) + varint(1)
+    EXPECT_EQ(6, ComputeEncodedSize(m));
+}
+
+/*
+TEST(EncoderTest, SubMessageSizeTest) {
+    FakeMessage m;
+    m.mutable_other()->set_num(150);
+
+    // tag(1) + len(1)
+    // sub_message(3)
+    EXPECT_EQ(5, ComputeEncodedSize(m));
+}
+*/
