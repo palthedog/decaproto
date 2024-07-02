@@ -155,6 +155,35 @@ public:
             const Message* message, uint32_t tag) const {
         return *MutableRepeatedRef<T>(const_cast<Message*>(message), tag);
     }
+
+// Define adders for repeated fields
+#define DEFINE_FOR(cc_type, CcType)                                         \
+    void Add##CcType(Message* message, uint32_t tag, cc_type value) const { \
+        MutableRepeatedRef<cc_type>(message, tag)->push_back(value);        \
+    }
+
+    // Define adders for primitive repeated fields
+    DEFINE_FOR(uint64_t, UInt64)
+    DEFINE_FOR(int64_t, Int64)
+    DEFINE_FOR(uint32_t, UInt32)
+    DEFINE_FOR(int32_t, Int32)
+    DEFINE_FOR(double, Double)
+    DEFINE_FOR(float, Float)
+    DEFINE_FOR(bool, Bool)
+    DEFINE_FOR(int, EnumValue)
+
+#undef DEFINE_FOR  // adder
+
+    void AddString(
+            Message* message, uint32_t tag, const std::string& value) const {
+        MutableRepeatedRef<std::string>(message, tag)->push_back(value);
+    }
+
+    Message* AddMessage(Message* message, uint32_t tag) const {
+        auto* messages = MutableRepeatedRef<Message*>(message, tag);
+        messages->resize(messages->size() + 1);
+        return messages->back();
+    }
 };
 
 }  // namespace decaproto

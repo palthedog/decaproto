@@ -108,22 +108,46 @@ bool DecodeVarint(
     uint32_t tag = field->GetTag();
     switch (field->GetType()) {
         case kInt32:
-            reflection->SetInt32(message, tag, value);
+            if (field->IsRepeated()) {
+                reflection->AddInt32(message, tag, value);
+            } else {
+                reflection->SetInt32(message, tag, value);
+            }
             return true;
         case kUInt32:
-            reflection->SetUInt32(message, tag, value);
+            if (field->IsRepeated()) {
+                reflection->AddUInt32(message, tag, value);
+            } else {
+                reflection->SetUInt32(message, tag, value);
+            }
             return true;
         case kBool:
-            reflection->SetBool(message, tag, value);
+            if (field->IsRepeated()) {
+                reflection->AddBool(message, tag, value);
+            } else {
+                reflection->SetBool(message, tag, value);
+            }
             return true;
         case kEnum:
-            reflection->SetEnumValue(message, tag, value);
+            if (field->IsRepeated()) {
+                reflection->AddEnumValue(message, tag, value);
+            } else {
+                reflection->SetEnumValue(message, tag, value);
+            }
             return true;
         case kInt64:
-            reflection->SetInt64(message, tag, value);
+            if (field->IsRepeated()) {
+                reflection->AddInt64(message, tag, value);
+            } else {
+                reflection->SetInt64(message, tag, value);
+            }
             return true;
         case kUInt64:
-            reflection->SetUInt64(message, tag, value);
+            if (field->IsRepeated()) {
+                reflection->AddUInt64(message, tag, value);
+            } else {
+                reflection->SetUInt64(message, tag, value);
+            }
             return true;
         case kSInt32:
             // not supported yet
@@ -170,7 +194,11 @@ bool DecodeLenPrefix(
                 cerr << "Failed to read string" << endl;
                 return false;
             }
-            reflection->SetString(message, tag, value);
+            if (field->IsRepeated()) {
+                reflection->AddString(message, tag, value);
+            } else {
+                reflection->SetString(message, tag, value);
+            }
             return true;
         }
         case kBytes: {
@@ -178,7 +206,12 @@ bool DecodeLenPrefix(
             return false;
         }
         case kMessage: {
-            Message* sub_message = reflection->MutableMessage(message, tag);
+            Message* sub_message;
+            if (field->IsRepeated()) {
+                sub_message = reflection->AddMessage(message, tag);
+            } else {
+                sub_message = reflection->MutableMessage(message, tag);
+            }
             return DecodeMessage(
                     cis,
                     size,
@@ -219,6 +252,7 @@ bool DecodeMessage(
             // TODO: We should keep them as unknown fields so that
             // we can encode the message again without losing any
             // information.
+            cerr << "Unknown field number: " << field_number << endl;
             SkipUnknownField(cis, wire_type);
             continue;
         }
@@ -234,11 +268,8 @@ bool DecodeMessage(
             return false;
         }
 
-        if (field->IsRepeated()) {
-            // TODO: Implement it
-            std::cerr << "Decoding repeated fields is not "
-                         "implemented yet."
-                      << endl;
+        if (field->IsPacked()) {
+            std::cerr << "Packed field is not supported yet." << endl;
             return false;
         }
 

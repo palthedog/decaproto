@@ -121,3 +121,38 @@ TEST(DecoderTest, DecodeEnumFieldTest) {
     EXPECT_TRUE(DecodeMessage(ins, &m));
     EXPECT_EQ(FakeEnum::ENUM_B, m.enum_field());
 }
+
+TEST(DecoderTest, DecodeRepeatedUInt32FieldTest) {
+    stringstream ss;
+    // tag: 2A (0 1010 010)
+    //   -> 0(continuation bit: stop)
+    //      0101(field_number: 5)
+    //      000(wire_type: 0, varint)
+    uint8_t tag = 0b0'0101'000;
+    // values: 0A 96 01
+    //   -> 10 150 20
+    ss.put(tag);
+    ss.put(0x0A);
+    ss.put(tag);
+    ss.put(0x96);
+    ss.put(0x01);
+    ss.put(tag);
+    ss.put(0x14);
+
+    StlInputStream ins(&ss);
+
+    FakeMessage m;
+    // Check that FakeMessage's field-2 is repeated kUInt32 just for the
+    // confirmation
+    EXPECT_EQ(
+            FieldType::kUInt32,
+            m.GetDescriptor()->FindFieldByNumber(kRepNumsTag)->GetType());
+    EXPECT_TRUE(
+            m.GetDescriptor()->FindFieldByNumber(kRepNumsTag)->IsRepeated());
+
+    EXPECT_TRUE(DecodeMessage(ins, &m));
+    EXPECT_EQ(3, m.rep_nums().size());
+    EXPECT_EQ(10, m.rep_nums()[0]);
+    EXPECT_EQ(150, m.rep_nums()[1]);
+    EXPECT_EQ(20, m.rep_nums()[2]);
+}

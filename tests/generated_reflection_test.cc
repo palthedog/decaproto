@@ -212,7 +212,7 @@ TEST(ReflectionTest, RepeatedEnumTest) {
     // Check with reflection getter
     const std::vector<RepeatedEnum>& nums =
             reflection->GetRepeatedRef<RepeatedEnum>(&m, kEnumValuesTag);
-    EXPECT_EQ(REP_ENUM_A, m.enum_values()[0]);
-    EXPECT_EQ(REP_ENUM_B, m.enum_values()[1]);
-    EXPECT_EQ(REP_ENUM_C, m.enum_values()[2]);
+    EXPECT_EQ(REP_ENUM_A, nums[0]);
+    EXPECT_EQ(REP_ENUM_B, nums[1]);
+    EXPECT_EQ(REP_ENUM_C, nums[2]);
 }
