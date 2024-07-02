@@ -129,7 +129,7 @@ func isPrimitiveType(f *descriptor.FieldDescriptorProto) bool {
 	return false
 }
 
-func processField(ctx *Context, msg_printer *MessagePrinter, f *descriptor.FieldDescriptorProto) {
+func processField(msg_printer *MessagePrinter, f *descriptor.FieldDescriptorProto) {
 	type_name_info := getTypeNameInfo(f)
 	if f.GetLabel() == descriptor.FieldDescriptorProto_LABEL_REPEATED {
 		// repeated

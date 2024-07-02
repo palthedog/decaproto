@@ -65,7 +65,7 @@ func processMessage(ctx *Context, m *descriptor.DescriptorProto) {
 	ctx.printer.prototype_declarations += "class " + full_name + ";\n"
 
 	for _, field := range m.GetField() {
-		processField(ctx, msg_printer, field)
+		processField(msg_printer, field)
 	}
 	printDescriptor(m, ctx.printer, msg_printer)
 	printReflection(m, ctx.printer, msg_printer)

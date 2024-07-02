@@ -6,6 +6,7 @@
 #include "decaproto/stream/stream.h"
 
 namespace decaproto {
+
 class StlInputStream : public InputStream {
     std::istream* stream_;
 
@@ -20,6 +21,20 @@ public:
         return static_cast<bool>(*stream_);
     }
 };
+
+class StlOutputStream : public OutputStream {
+    std::ostream* stream_;
+
+public:
+    StlOutputStream(std::ostream* stream) : stream_(stream) {
+    }
+
+    bool Write(std::uint8_t& out, uint8_t ch) override {
+        stream_->put(ch);
+        return stream_;
+    }
+};
+
 }  // namespace decaproto
 
 #endif

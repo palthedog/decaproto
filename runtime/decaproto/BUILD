@@ -2,9 +2,11 @@ cc_library(
     name = "decaproto",
     srcs = [
         "decoder.cc",
+        "encoder.cc",
     ],
     hdrs = [
         "decoder.h",
+        "encoder.h"
         "descriptor.h",
         "message.h",
         "reflection.h",
