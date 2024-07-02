@@ -5,12 +5,12 @@ package(default_visibility = ["//visibility:public"])
 
 go_binary(
     name = "decaproto",
-    embed = [":generator_lib"],
+    embed = [":codegen_lib"],
     visibility = ["//visibility:public"],
 )
 
 go_library(
-    name = "generator_lib",
+    name = "codegen_lib",
     srcs = [
         "descriptor.go",
         "field.go",
@@ -18,7 +18,7 @@ go_library(
         "reflection.go",
         "template.go",
     ],
-    importpath = "github.com/palthedog/decaproto/generator",
+    importpath = "github.com/palthedog/decaproto/codegen",
     visibility = ["//visibility:private"],
     deps = [
         "@com_github_golang_protobuf//protoc-gen-go/descriptor",
@@ -32,5 +32,5 @@ go_library(
 proto_plugin(
     name = "decaproto_plugin",
     output_directory = True,
-    tool = "//generator:decaproto",
+    tool = "//codegen:decaproto",
 )

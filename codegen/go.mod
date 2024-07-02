@@ -1,4 +1,4 @@
-module decaproto_generator
+module decaproto_codegen
 
 go 1.20
 

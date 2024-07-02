@@ -5,7 +5,6 @@ package(default_visibility = ["//visibility:public"])
 # gazelle:prefix github.com/palthedog/decaproto
 gazelle(
     name = "gazelle",
-    # Maintain BUILD only under generator/ directory
     command = "update",
 )
 

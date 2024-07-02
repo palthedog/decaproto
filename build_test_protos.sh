@@ -1,6 +1,6 @@
 #!/bin/bash -e
 
-cd generator/
+cd codegen/
 
 go build -o ./protoc-gen-deca_cpp
 

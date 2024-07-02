@@ -14,7 +14,7 @@ deca_proto_compile = rule(
         _plugins = attr.label_list(
             providers = [ProtoPluginInfo],
             default = [
-                Label("//generator:decaproto_plugin"),
+                Label("//codegen:decaproto_plugin"),
             ],
             cfg = "exec",
             doc = "List of protoc plugins to apply",
@@ -35,6 +35,6 @@ def deca_proto_library(name, protos, deps):
         srcs = [compiled_name],
         hdrs = [compiled_name],
         deps = deps,
-        linkstatic=True,
+        linkstatic = True,
         includes = [compiled_name],
     )
