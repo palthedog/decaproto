@@ -58,3 +58,24 @@ TEST(SimpleTest, MessageTest) {
     m.clear_other();
     EXPECT_FALSE(m.has_other());
 }
+
+TEST(SimpleTest, SubMessagePresenceTest) {
+    SimpleMessage m;
+
+    EXPECT_FALSE(m.has_other());
+
+    // getter returns a default value
+    const OtherMessage& other = m.other();
+    EXPECT_EQ(0, other.other_num());
+
+    // but still its hasser should return false because it's not set
+    EXPECT_FALSE(m.has_other());
+
+    m.mutable_other();
+    // Once we call mutable_other, its hasser should return true even if
+    // sub-message's field is not set
+    EXPECT_TRUE(m.has_other());
+
+    m.clear_other();
+    EXPECT_FALSE(m.has_other());
+}

@@ -98,6 +98,8 @@ size_t ComputeEncodedFieldSize(
                     size += value.size();
                 }
             } else {
+                // TODO: Implement hasser in reflection and use it to prevent
+                // memory allocation here.
                 string value = reflection->GetString(&message, tag);
                 if (!value.empty()) {
                     // tag
@@ -110,7 +112,34 @@ size_t ComputeEncodedFieldSize(
             }
             break;
         case FieldType::kMessage:
+            if (field_desc.IsRepeated()) {
+                for (const Message& value :
+                     reflection->GetRepeatedRef<Message>(&message, tag)) {
+                    size_t sub_msg_size = ComputeEncodedSize(value);
 
+                    // tag
+                    size += 1;
+                    // LEN
+                    size += ComputeEncodedVarintSize(sub_msg_size);
+                    // value
+                    size += sub_msg_size;
+                }
+            } else {
+                cerr << "kMessage" << endl;
+                const Message& value = reflection->GetMessage(&message, tag);
+                cerr << "got value" << endl;
+                size_t sub_msg_size = ComputeEncodedSize(value);
+                cerr << "computed size of other: " << sub_msg_size << endl;
+                if (sub_msg_size > 0) {
+                    // Encode only if the sub message is non-default value
+                    // tag
+                    size += 1;
+                    // LEN
+                    size += ComputeEncodedVarintSize(sub_msg_size);
+                    // value
+                    size += sub_msg_size;
+                }
+            }
             break;
         default:
             cerr << "Unsupported field type: " << field_desc.GetType() << endl;
@@ -125,10 +154,7 @@ size_t ComputeEncodedSize(
         const Descriptor* descriptor) {
     size_t size = 0;
     for (const FieldDescriptor& field_desc : descriptor->GetFields()) {
-        cerr << "field: " << field_desc.GetTag() << endl;
-        cerr << "field: " << field_desc.GetType() << endl;
         size += ComputeEncodedFieldSize(message, reflection, field_desc);
-        cerr << "total size: " << size << endl;
     }
     return size;
 }

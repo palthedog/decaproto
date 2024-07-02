@@ -50,7 +50,8 @@ class FakeMessage : public decaproto::Message {
     std::string str_;
 
     // OtherMessage other = 3
-    std::unique_ptr<FakeOtherMessage> other_;
+    mutable std::unique_ptr<FakeOtherMessage> other_;
+    bool has_other_;
 
     // FakeEnum enum_field= 4
     FakeEnum enum_field_;
@@ -61,7 +62,11 @@ class FakeMessage : public decaproto::Message {
 
 public:
     FakeMessage()
-        : num_(0), str_(""), other_(nullptr), enum_field_(FakeEnum::UNKNOWN) {
+        : num_(0),
+          str_(""),
+          other_(nullptr),
+          has_other_(false),
+          enum_field_(FakeEnum::UNKNOWN) {
     }
 
     ~FakeMessage() {
@@ -84,10 +89,13 @@ public:
     }
 
     bool has_other() {
-        return other_.get() != nullptr;
+        return has_other_;
     }
 
     const FakeOtherMessage& other() const {
+        if (!other_) {
+            other_ = std::make_unique<FakeOtherMessage>();
+        }
         return *other_;
     }
 
@@ -95,7 +103,13 @@ public:
         if (!other_) {
             other_ = std::make_unique<FakeOtherMessage>();
         }
+        has_other_ = true;
         return other_.get();
+    }
+
+    void clear_other() {
+        other_.reset();
+        has_other_ = false;
     }
 
     const FakeEnum& enum_field() const {

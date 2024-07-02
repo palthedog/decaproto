@@ -262,17 +262,21 @@ func addRepeatedField(f *descriptor.FieldDescriptorProto, type_name_info *TypeNa
 
 func addMessageField(f *descriptor.FieldDescriptorProto, type_name *TypeNameInfo, msg_printer *MessagePrinter) {
 	args := map[string]string{
-		"cc_type":     type_name.cc_type,
-		"holder_name": holderName(f),
-		"f_name":      f.GetName(),
+		"cc_type":         type_name.cc_type,
+		"holder_name":     holderName(f),
+		"has_holder_name": "has_" + holderName(f),
+		"f_name":          f.GetName(),
 	}
 
 	msg_printer.PushInitializer(
 		print("init_default_values", "{{.holder_name}}()", args))
+	msg_printer.PushInitializer(
+		print("init_default_has_values", "{{.has_holder_name}}(false)", args))
 
 	msg_printer.PushPrivate(
 		print("pri_rep_pri",
-			"    std::unique_ptr<{{.cc_type}}> {{.holder_name}};\n",
+			"    mutable std::unique_ptr<{{.cc_type}}> {{.holder_name}};\n"+
+				"    bool {{.has_holder_name}};\n",
 			args))
 
 	msg_printer.PushPublic(
@@ -280,6 +284,9 @@ func addMessageField(f *descriptor.FieldDescriptorProto, type_name *TypeNameInfo
 			`
 	// Getter for {{.f_name}}
 	const {{.cc_type}}& {{.f_name}}() const {
+		if (!{{.holder_name}}) {
+			{{.holder_name}} = std::make_unique<{{.cc_type}}>();
+        }
 	    return *{{.holder_name}};
 	}
 
@@ -288,17 +295,19 @@ func addMessageField(f *descriptor.FieldDescriptorProto, type_name *TypeNameInfo
 	    if (!{{.holder_name}}) {
 			{{.holder_name}} = std::make_unique<{{.cc_type}}>();
         }
+        {{.has_holder_name}} = true;
 	    return {{.holder_name}}.get();
 	}
 
 	// Hazzer for {{.f_name}}
 	bool has_{{.f_name}}() const {
-	    return (bool){{.holder_name}};
+	    return {{.has_holder_name}};
 	}
 
 	// Clearer for {{.f_name}}
 	void clear_{{.f_name}}() {
 	    {{.holder_name}}.reset();
+		{{.has_holder_name}} = false;
 	}
 
 `,

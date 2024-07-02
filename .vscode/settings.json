@@ -84,4 +84,5 @@
         "variant": "cpp"
     },
     "go.formatTool": "gofmt",
+    "cmake.configureOnOpen": false,
 }

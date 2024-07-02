@@ -65,7 +65,6 @@ TEST(EncoderTest, RepeatedNumWithDefaultValueSizeTest) {
     EXPECT_EQ(6, ComputeEncodedSize(m));
 }
 
-/*
 TEST(EncoderTest, SubMessageSizeTest) {
     FakeMessage m;
     m.mutable_other()->set_num(150);
@@ -74,4 +73,3 @@ TEST(EncoderTest, SubMessageSizeTest) {
     // sub_message(3)
     EXPECT_EQ(5, ComputeEncodedSize(m));
 }
-*/
