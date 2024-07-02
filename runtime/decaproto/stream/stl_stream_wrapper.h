@@ -29,7 +29,7 @@ public:
     StlOutputStream(std::ostream* stream) : stream_(stream) {
     }
 
-    bool Write(std::uint8_t& out, uint8_t ch) override {
+    bool Write(uint8_t ch) override {
         stream_->put(ch);
         return stream_;
     }

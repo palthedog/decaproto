@@ -13,7 +13,7 @@ public:
     virtual ~InputStream() {
     }
 
-    virtual bool Read(std::uint8_t& out) = 0;
+    virtual bool Read(uint8_t& out) = 0;
 };
 
 class OutputStream {
@@ -23,7 +23,7 @@ public:
     virtual ~OutputStream() {
     }
 
-    virtual bool Write(std::uint8_t& out, uint8_t ch) = 0;
+    virtual bool Write(uint8_t ch) = 0;
 };
 
 }  // namespace decaproto

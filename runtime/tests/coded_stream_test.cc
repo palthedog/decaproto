@@ -303,3 +303,78 @@ TEST(StreamTest, ReadFixedInt32Test) {
     EXPECT_TRUE(cis.ReadFixedInt32(result));
     EXPECT_EQ(0x67452301, result);
 }
+
+TEST(StreamTest, WriteOneVarint64Test) {
+    stringstream ss;
+    CodedOutputStream cos(new StlOutputStream(&ss));
+    CodedInputStream cis(new StlInputStream(&ss));
+
+    EXPECT_TRUE(cos.WriteVarint64(1));
+
+    uint64_t result;
+    EXPECT_TRUE(cis.ReadVarint64(result));
+    EXPECT_EQ(1, result);
+}
+
+TEST(StreamTest, WriteMultipleVarint64Test) {
+    stringstream ss;
+    CodedOutputStream cos(new StlOutputStream(&ss));
+    CodedInputStream cis(new StlInputStream(&ss));
+
+    uint64_t values[] = {1, 150, 100, 654321, 123456, UINT64_MAX};
+    for (auto value : values) {
+        EXPECT_TRUE(cos.WriteVarint64(value));
+    }
+
+    uint64_t result;
+    for (auto value : values) {
+        EXPECT_TRUE(cis.ReadVarint64(result));
+        EXPECT_EQ(value, result);
+    }
+}
+
+TEST(StreamTest, WriteMultipleVarint64_Minus_Test) {
+    stringstream ss;
+    CodedOutputStream cos(new StlOutputStream(&ss));
+    CodedInputStream cis(new StlInputStream(&ss));
+
+    int64_t values[] = {1, 150, -100, 654321, -123456, INT64_MIN, INT64_MAX};
+    for (auto value : values) {
+        EXPECT_TRUE(cos.WriteVarint64(value));
+    }
+
+    int64_t result;
+    for (auto value : values) {
+        EXPECT_TRUE(cis.ReadVarint64((uint64_t&)result));
+        EXPECT_EQ(value, result);
+    }
+}
+
+TEST(StreamTest, WriteOneVarint32Test) {
+    stringstream ss;
+    CodedOutputStream cos(new StlOutputStream(&ss));
+    CodedInputStream cis(new StlInputStream(&ss));
+
+    EXPECT_TRUE(cos.WriteVarint64(10));
+
+    uint64_t result;
+    EXPECT_TRUE(cis.ReadVarint64(result));
+    EXPECT_EQ(10, result);
+}
+
+TEST(StreamTest, WriteMultipleVarint32Test) {
+    stringstream ss;
+    CodedOutputStream cos(new StlOutputStream(&ss));
+    CodedInputStream cis(new StlInputStream(&ss));
+
+    uint64_t values[] = {1, 150, 123456, 1000, 654321, UINT32_MAX};
+    for (auto value : values) {
+        EXPECT_TRUE(cos.WriteVarint64(value));
+    }
+
+    uint64_t result;
+    for (auto value : values) {
+        EXPECT_TRUE(cis.ReadVarint64(result));
+        EXPECT_EQ(value, result);
+    }
+}

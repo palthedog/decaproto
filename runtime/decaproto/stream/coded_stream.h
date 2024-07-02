@@ -8,12 +8,12 @@
 namespace decaproto {
 
 // Wraps InputStream to provide additional functionality.
-class StreamWrapper final {
+class InputStreamWrapper final {
     InputStream* input_;
     size_t consumed_;
 
 public:
-    StreamWrapper(InputStream* input) : input_(input), consumed_(0) {
+    InputStreamWrapper(InputStream* input) : input_(input), consumed_(0) {
     }
 
     bool Read(std::uint8_t& out) {
@@ -30,6 +30,29 @@ public:
     };
 };
 
+// Wraps OutputStream to provide additional functionality.
+class OutputStreamWrapper final {
+    OutputStream* output_;
+    size_t written_;
+
+public:
+    OutputStreamWrapper(OutputStream* output) : output_(output), written_(0) {
+    }
+
+    bool Write(std::uint8_t value) {
+        if (!output_->Write(value)) {
+            return false;
+        }
+        written_++;
+        return true;
+    }
+
+    // How much data has been written to the stream.
+    size_t WrittenSize() {
+        return written_;
+    };
+};
+
 // Reads and decodes a varint from the input stream.
 class CodedInputStream {
 public:
@@ -39,11 +62,11 @@ public:
     ~CodedInputStream() {
     }
 
-    void Skip(int len) {
+    void Skip(size_t len) {
         // Temporal implementation to InputStream's interface as simple as
         // possible while developing the library.
         uint8_t b;
-        for (int i = 0; i < len; i++) {
+        for (size_t i = 0; i < len; i++) {
             input_.Read(b);
         }
     }
@@ -52,9 +75,9 @@ public:
         return input_.ConsumedSize();
     }
 
-    bool ReadString(std::string& result, int len) {
+    bool ReadString(std::string& result, size_t len) {
         result.clear();
-        for (int i = 0; i < len; i++) {
+        for (size_t i = 0; i < len; i++) {
             uint8_t b;
             if (!input_.Read(b)) {
                 return false;
@@ -101,9 +124,57 @@ public:
     }
 
 private:
-    StreamWrapper input_;
+    InputStreamWrapper input_;
+};
+
+class CodedOutputStream {
+public:
+    CodedOutputStream(OutputStream* output) : output_(output) {
+    }
+
+    ~CodedOutputStream() {
+    }
+
+    size_t WrittenSize() {
+        return output_.WrittenSize();
+    }
+
+    bool WriteString(const std::string& result) {
+        for (size_t i = 0; i < result.size(); i++) {
+            uint8_t b = result[i];
+            if (!output_.Write(b)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    bool WriteVarint64(uint64_t value);
+
+    bool WriteVarint32(uint32_t value) {
+        return WriteVarint64(value);
+    }
+
+    bool WriteSignedVarint64(int64_t value) {
+        uint64_t zigzag_enc_value = EncodeZigZag(value);
+        return WriteVarint64(zigzag_enc_value);
+    }
+
+    bool WriteSignedVarint32(int32_t value) {
+        return WriteSignedVarint64(value);
+    }
+
+    bool WriteFixedInt32(uint32_t value);
+    bool WriteFixedInt64(uint64_t value);
+
+    static uint64_t EncodeZigZag(uint64_t value) {
+        return (value << 1) | (value >> 63);
+    }
+
+private:
+    OutputStreamWrapper output_;
 };
 
 }  // namespace decaproto
 
-#endif
+#endif  // DECAPROTO_CODED_STREAM_H

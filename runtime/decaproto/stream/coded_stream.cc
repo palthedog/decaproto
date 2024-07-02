@@ -49,4 +49,41 @@ bool CodedInputStream::ReadFixedInt64(uint64_t& result) {
     return true;
 }
 
+bool CodedOutputStream::WriteVarint64(uint64_t value) {
+    do {
+        uint8_t b = value & 0x7f;
+        value = value >> 7;
+        if (value > 0) {
+            // set continuation bit
+            b |= 0x80;
+        }
+        if (!output_.Write(b)) {
+            return false;
+        }
+    } while (value > 0);
+    return true;
+}
+
+bool CodedOutputStream::WriteFixedInt32(uint32_t value) {
+    for (int i = 0; i < 4; i++) {
+        uint8_t b = value & 0xff;
+        value = value >> 8;
+        if (!output_.Write(b)) {
+            return false;
+        }
+    }
+    return true;
+}
+
+bool CodedOutputStream::WriteFixedInt64(uint64_t value) {
+    for (int i = 0; i < 4; i++) {
+        uint8_t b = value & 0xff;
+        value = value >> 8;
+        if (!output_.Write(b)) {
+            return false;
+        }
+    }
+    return true;
+}
+
 }  // namespace decaproto
