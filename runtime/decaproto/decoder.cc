@@ -43,13 +43,19 @@ using namespace std;
 
 namespace decaproto {
 
+bool DecodeMessage(
+        CodedInputStream& cis,
+        size_t size,
+        Message* message,
+        const Reflection* reflection,
+        const Descriptor* descriptor);
+
 bool DecodeTag(
         CodedInputStream& cis, uint32_t& field_number, WireType& wire_type) {
     // tag        := (field << 3) bit-or wire_type;
     //                 encoded as uint32 varint
     uint32_t tag;
     if (!cis.ReadVarint32(tag)) {
-        std::cerr << "Failed to read tag" << std::endl;
         return false;
     }
     field_number = tag >> 3;
@@ -153,6 +159,8 @@ bool DecodeLenPrefix(
         return false;
     }
 
+    uint32_t tag = field->GetTag();
+
     switch (field->GetType()) {
         case kString: {
             // TODO: Implement Reflection::MutableString so that we can set
@@ -162,7 +170,7 @@ bool DecodeLenPrefix(
                 cerr << "Failed to read string" << endl;
                 return false;
             }
-            reflection->SetString(message, field->GetTag(), value);
+            reflection->SetString(message, tag, value);
             return true;
         }
         case kBytes: {
@@ -170,15 +178,26 @@ bool DecodeLenPrefix(
             return false;
         }
         case kMessage: {
-            cerr << "TODO: Decoding Message field is not supported yet" << endl;
-            return false;
+            Message* sub_message = reflection->MutableMessage(message, tag);
+            return DecodeMessage(
+                    cis,
+                    size,
+                    sub_message,
+                    sub_message->GetReflection(),
+                    sub_message->GetDescriptor());
         }
+        default:
+            cerr << "This field is not a len-prefix field. tag: "
+                 << field->GetTag() << ", field type: " << field->GetType()
+                 << endl;
+            return false;
     }
     return true;
 }
 
 bool DecodeMessage(
         CodedInputStream& cis,
+        size_t size,
         Message* message,
         const Reflection* reflection,
         const Descriptor* descriptor) {
@@ -186,7 +205,11 @@ bool DecodeMessage(
 
     uint32_t field_number;
     WireType wire_type;
-    while (DecodeTag(cis, field_number, wire_type)) {
+
+    size_t consumed_start_size = cis.ConsumedSize();
+
+    while ((cis.ConsumedSize() - consumed_start_size) < size &&
+           DecodeTag(cis, field_number, wire_type)) {
         const FieldDescriptor* field =
                 descriptor->FindFieldByNumber(field_number);
         if (field == nullptr) {
@@ -236,17 +259,30 @@ bool DecodeMessage(
                 break;
             case kDeprecated_SGroup:
             case kDeprecated_EGroup:
-                std::cerr << "Deprecated SGroup/EGroup field is not supported"
+                std::cerr << "Deprecated SGroup/EGroup field is not "
+                             "supported"
                           << endl;
                 return false;
         }
+    }
+
+    if (size == SIZE_MAX) {
+        // The callder doesn't care about the message size.
+        return true;
+    }
+
+    if ((cis.ConsumedSize() - consumed_start_size) != size) {
+        cerr << "The message size is not matched. Expected: " << size
+             << ", Consumed: " << cis.ConsumedSize() << endl;
+        return false;
     }
     return true;
 }
 
 bool DecodeMessage(InputStream& ins, Message* out) {
     CodedInputStream cis(&ins);
-    return DecodeMessage(cis, out, out->GetReflection(), out->GetDescriptor());
+    return DecodeMessage(
+            cis, SIZE_MAX, out, out->GetReflection(), out->GetDescriptor());
 }
 
 }  // namespace decaproto

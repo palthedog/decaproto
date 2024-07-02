@@ -30,13 +30,8 @@ public:
         num_ = num;
     }
 
-    // We don't use following methods in this test.
-    const decaproto::Descriptor* GetDescriptor() const override {
-        return nullptr;
-    }
-    const decaproto::Reflection* GetReflection() const override {
-        return nullptr;
-    }
+    const decaproto::Descriptor* GetDescriptor() const override;
+    const decaproto::Reflection* GetReflection() const override;
 };
 
 const int kNumTag = 1;

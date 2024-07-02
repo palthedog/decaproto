@@ -7,6 +7,29 @@
 
 namespace decaproto {
 
+// Wraps InputStream to provide additional functionality.
+class StreamWrapper final {
+    InputStream* input_;
+    size_t consumed_;
+
+public:
+    StreamWrapper(InputStream* input) : input_(input), consumed_(0) {
+    }
+
+    bool Read(std::uint8_t& out) {
+        if (!input_->Read(out)) {
+            return false;
+        }
+        consumed_++;
+        return true;
+    }
+
+    // How much data has been consumed from the stream.
+    size_t ConsumedSize() {
+        return consumed_;
+    };
+};
+
 // Reads and decodes a varint from the input stream.
 class CodedInputStream {
 public:
@@ -21,15 +44,19 @@ public:
         // possible while developing the library.
         uint8_t b;
         for (int i = 0; i < len; i++) {
-            input_->Read(b);
+            input_.Read(b);
         }
+    }
+
+    size_t ConsumedSize() {
+        return input_.ConsumedSize();
     }
 
     bool ReadString(std::string& result, int len) {
         result.clear();
         for (int i = 0; i < len; i++) {
             uint8_t b;
-            if (!input_->Read(b)) {
+            if (!input_.Read(b)) {
                 return false;
             }
             result.push_back(b);
@@ -74,7 +101,7 @@ public:
     }
 
 private:
-    InputStream* input_;
+    StreamWrapper input_;
 };
 
 }  // namespace decaproto

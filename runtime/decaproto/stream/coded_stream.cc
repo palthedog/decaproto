@@ -6,7 +6,7 @@ bool CodedInputStream::ReadVarint64(uint64_t& result) {
     result = 0;
     uint32_t shift = 0;
     uint8_t b;
-    while (input_->Read(b)) {
+    while (input_.Read(b)) {
         result |= static_cast<uint64_t>(b & 0x7f) << shift;
         shift += 7;
         if ((b & 0x80) == 0) {
@@ -27,7 +27,7 @@ bool CodedInputStream::ReadFixedInt32(uint32_t& result) {
     result = 0;
     uint8_t b;
     for (int i = 0; i < 4; i++) {
-        if (!input_->Read(b)) {
+        if (!input_.Read(b)) {
             return false;
         }
         // Little-endian
@@ -40,7 +40,7 @@ bool CodedInputStream::ReadFixedInt64(uint64_t& result) {
     result = 0;
     uint8_t b;
     for (int i = 0; i < 8; i++) {
-        if (!input_->Read(b)) {
+        if (!input_.Read(b)) {
             return false;
         }
         // Little-endian

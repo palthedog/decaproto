@@ -34,29 +34,59 @@ const Reflection* FakeMessage::GetReflection() const {
     // Descriptor which produces dynamic ways to access the message
     kTestReflection = new Reflection();
 
-    // uint32 num = 0
+    // uint32 num = 1
     kTestReflection->RegisterSetUInt32(kNumTag, MsgCast(&FakeMessage::set_num));
     kTestReflection->RegisterGetUInt32(kNumTag, MsgCast(&FakeMessage::num));
 
-    // string str = 1
+    // string str = 2
     kTestReflection->RegisterSetString(kStrTag, MsgCast(&FakeMessage::set_str));
     kTestReflection->RegisterGetString(kStrTag, MsgCast(&FakeMessage::str));
 
-    // OtherMessage other = 2
+    // OtherMessage other = 3
     kTestReflection->RegisterMutableMessage(
             kOtherTag, MsgCast(&FakeMessage::mutable_other));
     kTestReflection->RegisterGetMessage(
             kOtherTag, MsgCast(&FakeMessage::other));
 
-    // TestEnum enum_field = 3
+    // TestEnum enum_field = 4
     kTestReflection->RegisterSetEnumValue(
             kEnumFieldTag, CastForSetEnumValue(&FakeMessage::set_enum_field));
     kTestReflection->RegisterGetEnumValue(
             kEnumFieldTag, CastForGetEnumValue(&FakeMessage::enum_field));
 
-    // repeated uint32 rep_nums = 4
+    // repeated uint32 rep_nums = 5
     kTestReflection->RegisterMutableRepeatedRef(
             kRepNumsTag, MsgCast(&FakeMessage::mutable_rep_nums));
 
     return kTestReflection;
+}
+
+Descriptor* kFakeOtherDescriptor = nullptr;
+Reflection* kFakeOtherReflection = nullptr;
+const decaproto::Descriptor* FakeOtherMessage::GetDescriptor() const {
+    if (kFakeOtherDescriptor != nullptr) {
+        return kFakeOtherDescriptor;
+    }
+
+    // Descriptor which represents this Message.
+    kFakeOtherDescriptor = new Descriptor();
+    kFakeOtherDescriptor->RegisterField(
+            FieldDescriptor(kOtherNumTag, FieldType::kUInt32));
+    return kFakeOtherDescriptor;
+}
+
+const Reflection* FakeOtherMessage::GetReflection() const {
+    if (kFakeOtherReflection != nullptr) {
+        return kFakeOtherReflection;
+    }
+
+    // Descriptor which produces dynamic ways to access the message
+    kFakeOtherReflection = new Reflection();
+
+    // uint32 num = 1
+    kFakeOtherReflection->RegisterSetUInt32(
+            kOtherNumTag, MsgCast(&FakeOtherMessage::set_num));
+    kFakeOtherReflection->RegisterGetUInt32(
+            kOtherNumTag, MsgCast(&FakeOtherMessage::num));
+    return kFakeOtherReflection;
 }
