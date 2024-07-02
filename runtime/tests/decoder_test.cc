@@ -28,7 +28,7 @@ TEST(DecoderTest, DecodeSingularNumTest) {
     StlInputStream ins(&ss);
 
     FakeMessage m;
-    // Check that FakeMessage's field-1 is kUInt32 just to make sure
+    // Check that FakeMessage's field-1 is kUInt32 just for the confirmation
     EXPECT_EQ(
             FieldType::kUInt32,
             m.GetDescriptor()->FindFieldByNumber(kNumTag)->GetType());
@@ -60,7 +60,7 @@ TEST(DecoderTest, DecodeSingularStringTest) {
     StlInputStream ins(&ss);
 
     FakeMessage m;
-    // Check that FakeMessage's field-2 is kUInt32 just to make sure
+    // Check that FakeMessage's field-2 is kUInt32 just for the confirmation
     EXPECT_EQ(
             FieldType::kString,
             m.GetDescriptor()->FindFieldByNumber(kStrTag)->GetType());
@@ -88,7 +88,7 @@ TEST(DecoderTest, DecodeMessageFieldTest) {
     StlInputStream ins(&ss);
 
     FakeMessage m;
-    // Check that FakeMessage's field-2 is kUInt32 just to make sure
+    // Check that FakeMessage's field-2 is kUInt32 just for the confirmation
     EXPECT_EQ(
             FieldType::kMessage,
             m.GetDescriptor()->FindFieldByNumber(kOtherTag)->GetType());
@@ -96,4 +96,28 @@ TEST(DecoderTest, DecodeMessageFieldTest) {
     EXPECT_TRUE(DecodeMessage(ins, &m));
     EXPECT_TRUE(m.has_other());
     EXPECT_EQ(150, m.other().num());
+}
+
+TEST(DecoderTest, DecodeEnumFieldTest) {
+    stringstream ss;
+    // 20 02 01
+    // tag: 20 (0 0100 000)
+    //   -> 0(continuation bit: stop)
+    //      0100(field_number: 4)
+    //      000(wire_type: varint)
+    ss.put(0b0'0100'000);
+    // value: 02
+    //   -> 2 (ENUM_B)
+    ss.put(0x02);
+
+    StlInputStream ins(&ss);
+
+    FakeMessage m;
+    // Check that FakeMessage's field-2 is kUInt32 just for the confirmation
+    EXPECT_EQ(
+            FieldType::kEnum,
+            m.GetDescriptor()->FindFieldByNumber(kEnumFieldTag)->GetType());
+
+    EXPECT_TRUE(DecodeMessage(ins, &m));
+    EXPECT_EQ(FakeEnum::ENUM_B, m.enum_field());
 }

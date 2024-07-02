@@ -10,7 +10,7 @@
 #include "decaproto/reflection.h"
 #include "decaproto/reflection_util.h"
 
-enum TestEnum {
+enum FakeEnum {
     UNKNOWN = 0,
     ENUM_A = 1,
     ENUM_B = 2,
@@ -49,8 +49,8 @@ class FakeMessage : public decaproto::Message {
     // OtherMessage other = 3
     std::unique_ptr<FakeOtherMessage> other_;
 
-    // TestEnum enum_field= 4
-    TestEnum enum_field_;
+    // FakeEnum enum_field= 4
+    FakeEnum enum_field_;
     bool has_enum_field_ = false;
 
     // repeated uint32 rep_nums = 5
@@ -94,11 +94,11 @@ public:
         return other_.get();
     }
 
-    const TestEnum& enum_field() const {
+    const FakeEnum& enum_field() const {
         return enum_field_;
     }
 
-    void set_enum_field(TestEnum enum_field) {
+    void set_enum_field(FakeEnum enum_field) {
         enum_field_ = enum_field;
         has_enum_field_ = true;
     }

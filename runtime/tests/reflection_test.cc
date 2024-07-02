@@ -78,10 +78,10 @@ TEST(ReflectionTest, SetEnumValueTest) {
     EXPECT_EQ(FieldType::kEnum, field_desc.GetType());
 
     // Get a mutable pointer to the message field through reflection
-    reflection->SetEnumValue(&m, field_desc.GetTag(), (int)TestEnum::ENUM_B);
+    reflection->SetEnumValue(&m, field_desc.GetTag(), (int)FakeEnum::ENUM_B);
 
     EXPECT_TRUE(m.has_enum_field());
-    EXPECT_EQ(TestEnum::ENUM_B, m.enum_field());
+    EXPECT_EQ(FakeEnum::ENUM_B, m.enum_field());
 }
 
 TEST(ReflectionTest, GetEnumValueTest) {
@@ -92,7 +92,7 @@ TEST(ReflectionTest, GetEnumValueTest) {
     // Note that the order of fields in the descriptor is not guaranteed.
 
     // m doesn't have other field yet
-    m.set_enum_field(TestEnum::ENUM_C);
+    m.set_enum_field(FakeEnum::ENUM_C);
 
     // Note that the order of fields in the descriptor is not guaranteed.
     const FieldDescriptor& field_desc =
@@ -102,7 +102,7 @@ TEST(ReflectionTest, GetEnumValueTest) {
     // Get a mutable pointer to the message field through reflection
     int enum_value = reflection->GetEnumValue(&m, field_desc.GetTag());
 
-    EXPECT_EQ(TestEnum::ENUM_C, (TestEnum)enum_value);
+    EXPECT_EQ(FakeEnum::ENUM_C, (FakeEnum)enum_value);
 }
 
 TEST(ReflectionTest, GetRepeatedFieldTest) {
