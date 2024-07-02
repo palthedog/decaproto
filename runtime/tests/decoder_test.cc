@@ -12,13 +12,13 @@
 using namespace decaproto;
 using namespace std;
 
-TEST(DecoderTest, DecodeSingleNumTest) {
+TEST(DecoderTest, DecodeSingularNumTest) {
     stringstream ss;
     // 08 96 01
     // tag: 08 (00001000)
-    //   -> 0(continuation bit)
-    //      0001(field_number)
-    //      000(wire_type)
+    //   -> 0(continuation bit: stop)
+    //      0001(field_number: 1)
+    //      000(wire_type: varint)
     ss.put(0x08);
     // value: 96 01
     //   -> varint 150
@@ -28,9 +28,43 @@ TEST(DecoderTest, DecodeSingleNumTest) {
     StlInputStream ins(&ss);
 
     FakeMessage m;
+    // Check that FakeMessage's field-1 is kUInt32 just to make sure
     EXPECT_EQ(
             FieldType::kUInt32,
             m.GetDescriptor()->FindFieldByNumber(kNumTag)->GetType());
 
     EXPECT_TRUE(DecodeMessage(ins, &m));
+    EXPECT_EQ(150, m.num());
+}
+
+TEST(DecoderTest, DecodeSingularStringTest) {
+    stringstream ss;
+    // 12 07 [74 65 73 74 69 6e 67]
+    // tag: 08 (0 0010 010)
+    //   -> 0(continuation bit: stop)
+    //      0010(field_number: 2)
+    //      010(wire_type: 2, len)
+    ss.put(0x12);
+    // len: 07
+    ss.put(0x07);
+    // value: [74 65 73 74 69 6e 67]
+    //   -> "testing"
+    ss.put(0x74);
+    ss.put(0x65);
+    ss.put(0x73);
+    ss.put(0x74);
+    ss.put(0x69);
+    ss.put(0x6e);
+    ss.put(0x67);
+
+    StlInputStream ins(&ss);
+
+    FakeMessage m;
+    // Check that FakeMessage's field-2 is kUInt32 just to make sure
+    EXPECT_EQ(
+            FieldType::kString,
+            m.GetDescriptor()->FindFieldByNumber(kStrTag)->GetType());
+
+    EXPECT_TRUE(DecodeMessage(ins, &m));
+    EXPECT_EQ("testing", m.str());
 }

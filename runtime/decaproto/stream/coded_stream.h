@@ -1,6 +1,8 @@
 #ifndef DECAPROTO_CODED_STREAM_H
 #define DECAPROTO_CODED_STREAM_H
 
+#include <string>
+
 #include "decaproto/stream/stream.h"
 
 namespace decaproto {
@@ -21,6 +23,18 @@ public:
         for (int i = 0; i < len; i++) {
             input_->Read(b);
         }
+    }
+
+    bool ReadString(std::string& result, int len) {
+        result.clear();
+        for (int i = 0; i < len; i++) {
+            uint8_t b;
+            if (!input_->Read(b)) {
+                return false;
+            }
+            result.push_back(b);
+        }
+        return true;
     }
 
     bool ReadVarint64(uint64_t& result);

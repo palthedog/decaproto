@@ -139,6 +139,44 @@ bool DecodeVarint(
     return true;
 }
 
+bool DecodeLenPrefix(
+        CodedInputStream& cis,
+        Message* message,
+        const Reflection* reflection,
+        const FieldDescriptor* field) {
+    // len-prefix := size (message | string | bytes | packed);
+    //               size encoded as int32 varint
+
+    uint32_t size;
+    if (!cis.ReadVarint32(size)) {
+        cerr << "Failed to read `size` of len-prefix" << endl;
+        return false;
+    }
+
+    switch (field->GetType()) {
+        case kString: {
+            // TODO: Implement Reflection::MutableString so that we can set
+            // string w/o memory allocation here.
+            string value;
+            if (!cis.ReadString(value, size)) {
+                cerr << "Failed to read string" << endl;
+                return false;
+            }
+            reflection->SetString(message, field->GetTag(), value);
+            return true;
+        }
+        case kBytes: {
+            cerr << "TODO: Decoding bytes field is not supported yet" << endl;
+            return false;
+        }
+        case kMessage: {
+            cerr << "TODO: Decoding Message field is not supported yet" << endl;
+            return false;
+        }
+    }
+    return true;
+}
+
 bool DecodeMessage(
         CodedInputStream& cis,
         Message* message,
@@ -155,15 +193,16 @@ bool DecodeMessage(
             // The field is not defined in the descriptor.
             // Skip the unknown field.
 
-            // TODO: We should keep them as unknown fields so that we can encode
-            // the message again without losing any information.
+            // TODO: We should keep them as unknown fields so that
+            // we can encode the message again without losing any
+            // information.
             SkipUnknownField(cis, wire_type);
             continue;
         }
         if (GetWireType(field->GetType()) != wire_type) {
             // The wire type does not match the field type.
-            // It happens because the sender and the receiver have different
-            // proto definitions.
+            // It happens because the sender and the receiver have
+            // different proto definitions.
             std::cerr << "The wire type doesn't match the field type."
                       << " Field type: " << field->GetType()
                       << ", WireType(FieldType)"
@@ -174,7 +213,8 @@ bool DecodeMessage(
 
         if (field->IsRepeated()) {
             // TODO: Implement it
-            std::cerr << "Decoding repeated fields is not implemented yet."
+            std::cerr << "Decoding repeated fields is not "
+                         "implemented yet."
                       << endl;
             return false;
         }
@@ -190,10 +230,14 @@ bool DecodeMessage(
                 std::cerr << "fixed int is not supported yet." << endl;
                 return false;
             case kLen:
+                if (!DecodeLenPrefix(cis, message, reflection, field)) {
+                    return false;
+                }
+                break;
             case kDeprecated_SGroup:
             case kDeprecated_EGroup:
-                // TODO: Implement it
-                std::cerr << "klen" << endl;
+                std::cerr << "Deprecated SGroup/EGroup field is not supported"
+                          << endl;
                 return false;
         }
     }
