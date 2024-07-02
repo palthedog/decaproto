@@ -5,7 +5,7 @@
 #include <sstream>
 
 #include "decaproto/stream/coded_stream.h"
-#include "decaproto/stream/stl_stream_wrapper.h"
+#include "decaproto/stream/stl.h"
 #include "decaproto/stream/stream.h"
 #include "fake_message.h"
 
@@ -40,6 +40,14 @@ TEST(EncoderTest, DefaultStringSizeTest) {
     m.set_str("");
 
     EXPECT_EQ(0, ComputeEncodedSize(m));
+}
+
+TEST(EncoderTest, EnumValueSizeTest) {
+    FakeMessage m;
+    m.set_enum_field(FakeEnum::ENUM_B);
+
+    // tag(1) + varint(1)
+    EXPECT_EQ(2, ComputeEncodedSize(m));
 }
 
 TEST(EncoderTest, RepeatedNumSizeTest) {

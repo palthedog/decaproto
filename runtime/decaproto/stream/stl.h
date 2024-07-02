@@ -1,5 +1,5 @@
-#ifndef DECAPROTO_STL_STREAM_WRAPPER_H
-#define DECAPROTO_STL_STREAM_WRAPPER_H
+#ifndef DECAPROTO_STL_H
+#define DECAPROTO_STL_H
 
 #include <iostream>
 

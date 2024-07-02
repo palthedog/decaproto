@@ -1,6 +1,5 @@
 syntax = "proto3";
 
-// TODO: Support putting OtherMessage below SimpleMessage
 message OtherMessage {
   int32 other_num = 1;
 }

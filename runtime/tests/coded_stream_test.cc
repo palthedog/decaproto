@@ -4,7 +4,7 @@
 
 #include <sstream>
 
-#include "decaproto/stream/stl_stream_wrapper.h"
+#include "decaproto/stream/stl.h"
 
 using namespace decaproto;
 using namespace std;

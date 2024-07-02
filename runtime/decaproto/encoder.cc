@@ -121,6 +121,21 @@ size_t ComputeEncodedFieldSize(
                 }
             }
             break;
+        case FieldType::kEnum:
+            if (field_desc.IsRepeated()) {
+                for (int32_t value :
+                     reflection->GetRepeatedRef<int32_t>(&message, tag)) {
+                    size += 1;  // tag
+                    size += ComputeEncodedVarintSize(value);
+                }
+            } else {
+                int32_t value = reflection->GetEnumValue(&message, tag);
+                if (value != 0) {
+                    size += 1;  // tag
+                    size += ComputeEncodedVarintSize(value);
+                }
+            }
+            break;
         case FieldType::kMessage:
             if (field_desc.IsRepeated()) {
                 for (const Message& value :
@@ -151,8 +166,25 @@ size_t ComputeEncodedFieldSize(
                 }
             }
             break;
-        default:
-            cerr << "Unsupported field type: " << field_desc.GetType() << endl;
+        case kDouble:
+        case kFloat:
+        case kSInt32:
+        case kSInt64:
+        case kFixed32:
+        case kFixed64:
+        case kSfixed32:
+        case kSfixed64:
+        case kBool:
+        case kBytes:
+        case kGroup:
+            cerr << "TODO: Implement FieldType: " << field_desc.GetType()
+                 << endl;
+            break;
+        case kUnknown:
+            cerr << "Unknown field type specified which should never be happen "
+                    "though"
+                 << endl;
+            size = 0;
             break;
     }
     return size;
@@ -294,6 +326,27 @@ bool EncodeField(
                 }
             }
             break;
+        case FieldType::kEnum:
+            if (field_desc.IsRepeated()) {
+                // Treat enum values as int since we don't know the enum type
+                // here
+                for (int value :
+                     reflection->GetRepeatedRef<int>(&message, tag)) {
+                    if (!EncodeTag(stream, field_desc) ||
+                        !stream.WriteVarint32(value)) {
+                        return false;
+                    }
+                }
+            } else {
+                int value = reflection->GetEnumValue(&message, tag);
+                if (value != 0) {
+                    if (!EncodeTag(stream, field_desc) ||
+                        !stream.WriteVarint32(value)) {
+                        return false;
+                    }
+                }
+            }
+            break;
         case FieldType::kMessage:
             if (field_desc.IsRepeated()) {
                 for (const Message& value :
@@ -332,9 +385,25 @@ bool EncodeField(
                 }
             }
             break;
-        default:
-            cerr << "Unsupported field type: " << field_desc.GetType() << endl;
-            return false;
+        case kDouble:
+        case kFloat:
+        case kSInt32:
+        case kSInt64:
+        case kFixed32:
+        case kFixed64:
+        case kSfixed32:
+        case kSfixed64:
+        case kBool:
+        case kBytes:
+        case kGroup:
+            cerr << "TODO: Implement FieldType: " << field_desc.GetType()
+                 << endl;
+            break;
+        case kUnknown:
+            cerr << "Unknown field type specified which should never be happen "
+                    "though"
+                 << endl;
+            break;
     }
     return true;
 }

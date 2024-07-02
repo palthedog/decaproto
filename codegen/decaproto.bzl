@@ -23,7 +23,7 @@ deca_proto_compile = rule(
     toolchains = [str(Label("@rules_proto_grpc//protoc:toolchain_type"))],
 )
 
-def deca_proto_library(name, protos, deps):
+def deca_proto_library(name, protos, deps = []):
     compiled_name = name + "_comp"
     deca_proto_compile(
         name = compiled_name,
@@ -34,7 +34,9 @@ def deca_proto_library(name, protos, deps):
         name = name,
         srcs = [compiled_name],
         hdrs = [compiled_name],
-        deps = deps,
+        deps = deps + [
+            "//runtime/decaproto",
+        ],
         linkstatic = True,
         includes = [compiled_name],
     )

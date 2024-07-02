@@ -5,7 +5,7 @@ cc_library(
     ],
     hdrs = [
         "coded_stream.h",
-        "stl_stream_wrapper.h",
+        "stl.h",
         "stream.h",
     ],
     strip_include_prefix = "/runtime",

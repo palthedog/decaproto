@@ -13,9 +13,6 @@ proto_library(
 deca_proto_library(
     name = "test_deca_proto",
     protos = [":test_proto"],
-    deps = [
-        "//runtime/decaproto",
-    ],
 )
 
 cc_test(
@@ -55,6 +52,17 @@ cc_test(
     name = "generated_reflection_test",
     size = "small",
     srcs = ["generated_reflection_test.cc"],
+    deps = [
+        ":test_deca_proto",
+        "//runtime/decaproto",
+        "@googletest//:gtest_main",
+    ],
+)
+
+cc_test(
+    name = "encode_decode_test",
+    size = "small",
+    srcs = ["encode_decode_test.cc"],
     deps = [
         ":test_deca_proto",
         "//runtime/decaproto",

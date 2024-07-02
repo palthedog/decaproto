@@ -5,7 +5,7 @@
 #include <sstream>
 
 #include "decaproto/stream/coded_stream.h"
-#include "decaproto/stream/stl_stream_wrapper.h"
+#include "decaproto/stream/stl.h"
 #include "decaproto/stream/stream.h"
 #include "fake_message.h"
 
