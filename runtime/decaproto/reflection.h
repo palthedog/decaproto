@@ -94,7 +94,7 @@ public:
         return it->second(message);                                           \
     }
 
-    // Define Setter resgisterers
+    // Define Setter registerers
 
     DEFINE_FOR(uint64_t, UInt64)
     DEFINE_FOR(int64_t, Int64)
@@ -131,7 +131,7 @@ public:
         return it->second(message);                                          \
     }
 
-    // Define Getter resgisterers
+    // Define Getter registerers
     DEFINE_FOR(Message, Message)
 
 #undef DEFINE_FOR  // Define Registerer
