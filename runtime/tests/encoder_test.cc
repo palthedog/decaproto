@@ -112,3 +112,21 @@ TEST(EncoderTest, EncodeStringTest) {
     EXPECT_EQ('n', ss.get());
     EXPECT_EQ('g', ss.get());
 }
+
+TEST(EncoderTest, EncodeSubMessageTest) {
+    stringstream ss;
+    StlOutputStream outs(&ss);
+
+    FakeMessage m;
+    m.mutable_other()->set_num(150);
+
+    size_t written_size;
+    EXPECT_TRUE(EncodeMessage(outs, m, written_size));
+    EXPECT_EQ(5, written_size);
+
+    EXPECT_EQ(0x1A, ss.get());
+    EXPECT_EQ(0x03, ss.get());
+    EXPECT_EQ(0x08, ss.get());
+    EXPECT_EQ(0x96, ss.get());
+    EXPECT_EQ(0x01, ss.get());
+}

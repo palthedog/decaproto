@@ -13,6 +13,12 @@ namespace decaproto {
 
 using namespace std;
 
+bool EncodeMessage(
+        CodedOutputStream& stream,
+        const Message& message,
+        const Reflection* reflection,
+        const Descriptor* descriptor);
+
 size_t ComputeEncodedVarintSize(uint64_t value) {
     size_t size = 0;
     do {
@@ -186,16 +192,16 @@ bool EncodeField(
             if (field_desc.IsRepeated()) {
                 for (int32_t value :
                      reflection->GetRepeatedRef<int32_t>(&message, tag)) {
-                    EncodeTag(stream, field_desc);
-                    if (!stream.WriteVarint32(value)) {
+                    if (!EncodeTag(stream, field_desc) |
+                        !stream.WriteVarint32(value)) {
                         return false;
                     }
                 }
             } else {
                 int32_t value = reflection->GetInt32(&message, tag);
                 if (value != 0) {
-                    EncodeTag(stream, field_desc);
-                    if (!stream.WriteVarint32(value)) {
+                    if (!EncodeTag(stream, field_desc) ||
+                        !stream.WriteVarint32(value)) {
                         return false;
                     }
                 }
@@ -206,16 +212,16 @@ bool EncodeField(
             if (field_desc.IsRepeated()) {
                 for (uint32_t value :
                      reflection->GetRepeatedRef<uint32_t>(&message, tag)) {
-                    EncodeTag(stream, field_desc);
-                    if (!stream.WriteVarint32(value)) {
+                    if (!EncodeTag(stream, field_desc) ||
+                        !stream.WriteVarint32(value)) {
                         return false;
                     }
                 }
             } else {
                 uint32_t value = reflection->GetUInt32(&message, tag);
                 if (value != 0) {
-                    EncodeTag(stream, field_desc);
-                    if (!stream.WriteVarint32(value)) {
+                    if (!EncodeTag(stream, field_desc) ||
+                        !stream.WriteVarint32(value)) {
                         return false;
                     }
                 }
@@ -225,16 +231,16 @@ bool EncodeField(
             if (field_desc.IsRepeated()) {
                 for (int64_t value :
                      reflection->GetRepeatedRef<int64_t>(&message, tag)) {
-                    EncodeTag(stream, field_desc);
-                    if (!stream.WriteVarint64(value)) {
+                    if (!EncodeTag(stream, field_desc) ||
+                        !stream.WriteVarint64(value)) {
                         return false;
                     }
                 }
             } else {
                 int64_t value = reflection->GetInt64(&message, tag);
                 if (value != 0) {
-                    EncodeTag(stream, field_desc);
-                    if (!stream.WriteVarint64(value)) {
+                    if (!EncodeTag(stream, field_desc) ||
+                        !stream.WriteVarint64(value)) {
                         return false;
                     }
                 }
@@ -244,16 +250,16 @@ bool EncodeField(
             if (field_desc.IsRepeated()) {
                 for (uint64_t value :
                      reflection->GetRepeatedRef<uint64_t>(&message, tag)) {
-                    EncodeTag(stream, field_desc);
-                    if (!stream.WriteVarint64(value)) {
+                    if (!EncodeTag(stream, field_desc) ||
+                        !stream.WriteVarint64(value)) {
                         return false;
                     }
                 }
             } else {
                 uint64_t value = reflection->GetUInt64(&message, tag);
                 if (value != 0) {
-                    EncodeTag(stream, field_desc);
-                    if (!stream.WriteVarint64(value)) {
+                    if (!EncodeTag(stream, field_desc) ||
+                        !stream.WriteVarint64(value)) {
                         return false;
                     }
                 }
@@ -264,11 +270,13 @@ bool EncodeField(
                 for (const string& value :
                      reflection->GetRepeatedRef<string>(&message, tag)) {
                     // tag
-                    EncodeTag(stream, field_desc);
-                    // LEN
-                    stream.WriteVarint32(value.size());
-                    // value
-                    stream.WriteString(value);
+                    if (!EncodeTag(stream, field_desc) ||
+                        // LEN
+                        !stream.WriteVarint32(value.size()) ||
+                        // value
+                        !stream.WriteString(value)) {
+                        return false;
+                    }
                 }
             } else {
                 // TODO: Implement hasser in reflection and use it to prevent
@@ -276,49 +284,57 @@ bool EncodeField(
                 string value = reflection->GetString(&message, tag);
                 if (!value.empty()) {
                     // tag
-                    EncodeTag(stream, field_desc);
-                    // LEN
-                    stream.WriteVarint32(value.size());
-                    // value
-                    stream.WriteString(value);
+                    if (!EncodeTag(stream, field_desc) ||
+                        // LEN
+                        !stream.WriteVarint32(value.size()) ||
+                        // value
+                        !stream.WriteString(value)) {
+                        return false;
+                    }
                 }
             }
             break;
-            /*
         case FieldType::kMessage:
             if (field_desc.IsRepeated()) {
                 for (const Message& value :
                      reflection->GetRepeatedRef<Message>(&message, tag)) {
                     size_t sub_msg_size = ComputeEncodedSize(value);
-
                     // tag
-                    size += 1;
-                    // LEN
-                    size += ComputeEncodedVarintSize(sub_msg_size);
-                    // value
-                    size += sub_msg_size;
+                    if (!EncodeTag(stream, field_desc) ||
+                        // LEN
+                        !stream.WriteVarint32(sub_msg_size) ||
+                        // value
+                        !EncodeMessage(
+                                stream,
+                                value,
+                                value.GetReflection(),
+                                value.GetDescriptor())) {
+                        return false;
+                    }
                 }
             } else {
-                cerr << "kMessage" << endl;
                 const Message& value = reflection->GetMessage(&message, tag);
-                cerr << "got value" << endl;
                 size_t sub_msg_size = ComputeEncodedSize(value);
-                cerr << "computed size of other: " << sub_msg_size << endl;
                 if (sub_msg_size > 0) {
                     // Encode only if the sub message is non-default value
                     // tag
-                    size += 1;
-                    // LEN
-                    size += ComputeEncodedVarintSize(sub_msg_size);
-                    // value
-                    size += sub_msg_size;
+                    if (!EncodeTag(stream, field_desc) ||
+                        // LEN
+                        !stream.WriteVarint32(sub_msg_size) ||
+                        // value
+                        !EncodeMessage(
+                                stream,
+                                value,
+                                value.GetReflection(),
+                                value.GetDescriptor())) {
+                        return false;
+                    }
                 }
             }
             break;
-            */
         default:
             cerr << "Unsupported field type: " << field_desc.GetType() << endl;
-            break;
+            return false;
     }
     return true;
 }
