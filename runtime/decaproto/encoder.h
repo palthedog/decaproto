@@ -8,7 +8,8 @@ namespace decaproto {
 
 size_t ComputeEncodedSize(const Message& message);
 
-bool EncodeMessage(OutputStream& stream, const Message& message);
+bool EncodeMessage(
+        OutputStream& stream, const Message& message, size_t& written_size);
 
 }  // namespace decaproto
 

@@ -37,7 +37,7 @@ enum FieldType {
 
 // Descriptor for decaproto fields in messages
 class FieldDescriptor final {
-    uint32_t tag_;
+    uint32_t field_number_;
     FieldType type_;
 
     bool repeated_;
@@ -46,18 +46,21 @@ class FieldDescriptor final {
 public:
     // Primitive types
     FieldDescriptor(
-            uint32_t tag,
+            uint32_t field_number,
             FieldType type,
             bool repeated = false,
             bool packed = false)
-        : tag_(tag), type_(type), repeated_(repeated), packed_(packed) {
+        : field_number_(field_number),
+          type_(type),
+          repeated_(repeated),
+          packed_(packed) {
     }
 
     ~FieldDescriptor() {
     }
 
-    inline uint32_t GetTag() const {
-        return tag_;
+    inline uint32_t GetFieldNumber() const {
+        return field_number_;
     }
 
     inline FieldType GetType() const {
@@ -94,12 +97,12 @@ public:
         return fields_;
     }
 
-    const FieldDescriptor* FindFieldByNumber(uint32_t tag) const {
+    const FieldDescriptor* FindFieldByNumber(uint32_t field_number) const {
         auto f =
                 find_if(fields_.begin(),
                         fields_.end(),
                         [=](const FieldDescriptor& field) {
-                            return field.GetTag() == tag;
+                            return field.GetFieldNumber() == field_number;
                         });
         if (f == fields_.end()) {
             return nullptr;

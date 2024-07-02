@@ -73,3 +73,42 @@ TEST(EncoderTest, SubMessageSizeTest) {
     // sub_message(3)
     EXPECT_EQ(5, ComputeEncodedSize(m));
 }
+
+TEST(EncoderTest, EncodeNumTest) {
+    stringstream ss;
+    StlOutputStream outs(&ss);
+
+    FakeMessage m;
+    // 150 is encoded as 0x96 0x01 in varint
+    m.set_num(150);
+
+    size_t written_size;
+    EXPECT_TRUE(EncodeMessage(outs, m, written_size));
+    EXPECT_EQ(3, written_size);
+
+    EXPECT_EQ(0x08, ss.get());
+    EXPECT_EQ(0x96, ss.get());
+    EXPECT_EQ(0x01, ss.get());
+}
+
+TEST(EncoderTest, EncodeStringTest) {
+    stringstream ss;
+    StlOutputStream outs(&ss);
+
+    FakeMessage m;
+    m.set_str("testing");
+
+    size_t written_size;
+    EXPECT_TRUE(EncodeMessage(outs, m, written_size));
+    EXPECT_EQ(9, written_size);
+
+    EXPECT_EQ(0x12, ss.get());
+    EXPECT_EQ(0x07, ss.get());
+    EXPECT_EQ('t', ss.get());
+    EXPECT_EQ('e', ss.get());
+    EXPECT_EQ('s', ss.get());
+    EXPECT_EQ('t', ss.get());
+    EXPECT_EQ('i', ss.get());
+    EXPECT_EQ('n', ss.get());
+    EXPECT_EQ('g', ss.get());
+}

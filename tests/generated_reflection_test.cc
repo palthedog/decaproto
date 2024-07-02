@@ -14,7 +14,7 @@ const FieldDescriptor& FindFieldDescriptor(
             descriptor->GetFields().begin(),
             descriptor->GetFields().end(),
             [=](const FieldDescriptor& field) {
-                return field.GetTag() == tag;
+                return field.GetFieldNumber() == tag;
             });
 }
 

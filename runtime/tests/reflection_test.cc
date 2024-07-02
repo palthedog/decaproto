@@ -20,7 +20,7 @@ const FieldDescriptor& FindFieldDescriptor(
             descriptor->GetFields().begin(),
             descriptor->GetFields().end(),
             [tag](const FieldDescriptor& field_desc) {
-                return field_desc.GetTag() == tag;
+                return field_desc.GetFieldNumber() == tag;
             });
 }
 
@@ -30,9 +30,9 @@ TEST(ReflectionTest, SimpleTest) {
     const Reflection* reflection = m.GetReflection();
 
     const FieldDescriptor& num_field = FindFieldDescriptor(descriptor, kNumTag);
-    reflection->SetUInt32(&m, num_field.GetTag(), 100);
+    reflection->SetUInt32(&m, num_field.GetFieldNumber(), 100);
     const FieldDescriptor& str_field = FindFieldDescriptor(descriptor, kStrTag);
-    reflection->SetString(&m, str_field.GetTag(), "hello");
+    reflection->SetString(&m, str_field.GetFieldNumber(), "hello");
 
     EXPECT_EQ(100, m.num());
     EXPECT_EQ("hello", m.str());
@@ -55,7 +55,7 @@ TEST(ReflectionTest, MessageFieldTest) {
 
     // Get a mutable pointer to the message field through reflection
     FakeOtherMessage* other = static_cast<FakeOtherMessage*>(
-            reflection->MutableMessage(&m, field_desc.GetTag()));
+            reflection->MutableMessage(&m, field_desc.GetFieldNumber()));
     other->set_num(128);
 
     EXPECT_TRUE(m.has_other());
@@ -78,7 +78,8 @@ TEST(ReflectionTest, SetEnumValueTest) {
     EXPECT_EQ(FieldType::kEnum, field_desc.GetType());
 
     // Get a mutable pointer to the message field through reflection
-    reflection->SetEnumValue(&m, field_desc.GetTag(), (int)FakeEnum::ENUM_B);
+    reflection->SetEnumValue(
+            &m, field_desc.GetFieldNumber(), (int)FakeEnum::ENUM_B);
 
     EXPECT_TRUE(m.has_enum_field());
     EXPECT_EQ(FakeEnum::ENUM_B, m.enum_field());
@@ -100,7 +101,7 @@ TEST(ReflectionTest, GetEnumValueTest) {
     EXPECT_EQ(FieldType::kEnum, field_desc.GetType());
 
     // Get a mutable pointer to the message field through reflection
-    int enum_value = reflection->GetEnumValue(&m, field_desc.GetTag());
+    int enum_value = reflection->GetEnumValue(&m, field_desc.GetFieldNumber());
 
     EXPECT_EQ(FakeEnum::ENUM_C, (FakeEnum)enum_value);
 }

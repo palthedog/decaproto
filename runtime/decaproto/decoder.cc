@@ -105,7 +105,7 @@ bool DecodeVarint(
         return false;
     }
 
-    uint32_t tag = field->GetTag();
+    uint32_t tag = field->GetFieldNumber();
     switch (field->GetType()) {
         case kInt32:
             if (field->IsRepeated()) {
@@ -163,7 +163,7 @@ bool DecodeVarint(
         default:
             // This field is not a varint field.
             std::cerr << "This field is not a varint field. tag: "
-                      << field->GetTag() << std::endl;
+                      << field->GetFieldNumber() << std::endl;
             return false;
     }
     return true;
@@ -183,7 +183,7 @@ bool DecodeLenPrefix(
         return false;
     }
 
-    uint32_t tag = field->GetTag();
+    uint32_t tag = field->GetFieldNumber();
 
     switch (field->GetType()) {
         case kString: {
@@ -221,8 +221,8 @@ bool DecodeLenPrefix(
         }
         default:
             cerr << "This field is not a len-prefix field. tag: "
-                 << field->GetTag() << ", field type: " << field->GetType()
-                 << endl;
+                 << field->GetFieldNumber()
+                 << ", field type: " << field->GetType() << endl;
             return false;
     }
     return true;
