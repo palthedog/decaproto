@@ -8,7 +8,6 @@ cc_library(
         "stl_stream_wrapper.h",
         "stream.h",
     ],
-    includes = ["."],
     strip_include_prefix = "/runtime",
     visibility = ["//visibility:public"],
 )

@@ -1,3 +1,10 @@
+#ifndef DECAPROTO_DECODER_H
+#define DECAPROTO_DECODER_H
+
+#include "decaproto/descriptor.h"
+#include "decaproto/message.h"
+#include "decaproto/stream/stream.h"
+
 namespace decaproto {
 
 enum WireType {
@@ -15,15 +22,14 @@ enum WireType {
     kI32 = 5,
 };
 
-/*
 inline WireType GetWireType(FieldType type) {
     switch (type) {
         case kInt32:
         case kInt64:
-        case kUint32:
-        case kUint64:
-        case kSint32:
-        case kSint64:
+        case kUInt32:
+        case kUInt64:
+        case kSInt32:
+        case kSInt64:
         case kBool:
         case kEnum:
             return kVarint;
@@ -42,7 +48,10 @@ inline WireType GetWireType(FieldType type) {
         default:
             return kVarint;
     }
-}
-*/
+};
+
+bool DecodeMessage(InputStream& stream, Message* out);
 
 }  // namespace decaproto
+
+#endif  // DECAPROTO_DECODER_H

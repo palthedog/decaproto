@@ -1,6 +1,7 @@
 #ifndef DECAPROTO_DESCRIPTOR_H
 #define DECAPROTO_DESCRIPTOR_H
 
+#include <algorithm>
 #include <cstdint>
 #include <vector>
 
@@ -91,6 +92,19 @@ public:
 
     const std::vector<FieldDescriptor>& GetFields() const {
         return fields_;
+    }
+
+    const FieldDescriptor* FindFieldByNumber(uint32_t tag) const {
+        auto f =
+                find_if(fields_.begin(),
+                        fields_.end(),
+                        [=](const FieldDescriptor& field) {
+                            return field.GetTag() == tag;
+                        });
+        if (f == fields_.end()) {
+            return nullptr;
+        }
+        return &(*f);
     }
 };
 

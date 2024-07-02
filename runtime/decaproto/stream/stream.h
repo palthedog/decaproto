@@ -5,6 +5,7 @@
 
 namespace decaproto {
 
+// Let's keep the implementation as simple as possible for now.
 class InputStream {
 public:
     InputStream() {
