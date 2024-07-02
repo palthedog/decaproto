@@ -98,6 +98,40 @@ TEST(DecoderTest, DecodeMessageFieldTest) {
     EXPECT_EQ(150, m.other().num());
 }
 
+TEST(DecoderTest, DecodeMessageFieldBetweenOtherFieldsTest) {
+    stringstream ss;
+
+    // 1: 10 (set num to 10)
+    ss.put(0b0'0001'000);
+    ss.put(0x0A);
+
+    // 3: LEN 3 {1: 150}  (set other.num to 150)
+    ss.put(0b0'0011'010);
+    ss.put(0x03);
+    ss.put(0x08);
+    ss.put(0x96);
+    ss.put(0x01);
+
+    // 4: 2 (set enum_field to ENUM_B)
+    ss.put(0b0'0100'000);
+    ss.put(0x02);
+
+    StlInputStream ins(&ss);
+
+    FakeMessage m;
+    // Check that FakeMessage's field-2 is kUInt32 just for the confirmation
+
+    EXPECT_TRUE(DecodeMessage(ins, &m));
+
+    // Checks sub message
+    EXPECT_TRUE(m.has_other());
+    EXPECT_EQ(150, m.other().num());
+
+    // Checks outer message
+    EXPECT_EQ(10, m.num());
+    EXPECT_EQ(FakeEnum::ENUM_B, m.enum_field());
+}
+
 TEST(DecoderTest, DecodeEnumFieldTest) {
     stringstream ss;
     // 20 02 01
@@ -155,4 +189,58 @@ TEST(DecoderTest, DecodeRepeatedUInt32FieldTest) {
     EXPECT_EQ(10, m.rep_nums()[0]);
     EXPECT_EQ(150, m.rep_nums()[1]);
     EXPECT_EQ(20, m.rep_nums()[2]);
+}
+
+TEST(DecoderTest, DecodeRepeatedUInt32_StringInTheMiddle_FieldTest) {
+    stringstream ss;
+    // tag: 2A (0 1010 010)
+    //   -> 0(continuation bit: stop)
+    //      0101(field_number: 5)
+    //      000(wire_type: 0, varint)
+    uint8_t tag = 0b0'0101'000;
+    // values: 0A 96 01
+    //   -> 10 150 20
+
+    // add nums
+    ss.put(tag);
+    ss.put(0x0A);
+
+    // add nums
+    ss.put(tag);
+    ss.put(0x96);
+    ss.put(0x01);
+
+    // 2: LEN 7 {"testing"}
+    ss.put(0b0'0010'010);
+    ss.put(0x07);
+    ss.put(0x74);
+    ss.put(0x65);
+    ss.put(0x73);
+    ss.put(0x74);
+    ss.put(0x69);
+    ss.put(0x6e);
+    ss.put(0x67);
+
+    // add nums
+    ss.put(tag);
+    ss.put(0x14);
+
+    StlInputStream ins(&ss);
+
+    FakeMessage m;
+    // Check that FakeMessage's field-2 is repeated kUInt32 just for the
+    // confirmation
+    EXPECT_EQ(
+            FieldType::kUInt32,
+            m.GetDescriptor()->FindFieldByNumber(kRepNumsTag)->GetType());
+    EXPECT_TRUE(
+            m.GetDescriptor()->FindFieldByNumber(kRepNumsTag)->IsRepeated());
+
+    EXPECT_TRUE(DecodeMessage(ins, &m));
+    EXPECT_EQ(3, m.rep_nums().size());
+    EXPECT_EQ(10, m.rep_nums()[0]);
+    EXPECT_EQ(150, m.rep_nums()[1]);
+    EXPECT_EQ(20, m.rep_nums()[2]);
+
+    EXPECT_EQ("testing", m.str());
 }
