@@ -64,6 +64,29 @@ static std::function<int(const Message*)> CastForGetEnumValue(
     };
 }
 
+template <typename FieldEnumType, typename SubMsg>
+static std::function<void(Message*, size_t, int)> CastForSetRepeatedEnumValue(
+        void (SubMsg::*method_ptr)(size_t, FieldEnumType)) {
+    // SetEnumValue takes an int.
+    // We need to cast the int value into the EnumType
+    return [=](Message* base_message, size_t index, int arg) -> void {
+        SubMsg* message = static_cast<SubMsg*>(base_message);
+        (message->*method_ptr)(index, static_cast<FieldEnumType>(arg));
+    };
+}
+
+template <typename FieldEnumType, typename SubMsg>
+static std::function<int*(Message*)> CastForAddRepeatedEnumValue(
+        FieldEnumType* (SubMsg::*method_ptr)()) {
+    // SetEnumValue takes an int.
+    // We need to cast the int value into the EnumType
+    return [=](Message* base_message) -> int* {
+        SubMsg* message = static_cast<SubMsg*>(base_message);
+        FieldEnumType* mut_enum = (message->*method_ptr)();
+        return reinterpret_cast<int*>(mut_enum);
+    };
+}
+
 }  // namespace decaproto
 
 #endif  // DECAPROTO_REFLECTION_UTIL_H

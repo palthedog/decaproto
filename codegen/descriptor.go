@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+
 	descriptor "github.com/golang/protobuf/protoc-gen-go/descriptor"
 )
 
@@ -25,10 +26,17 @@ func printDescriptor(m *descriptor.DescriptorProto, fp *FilePrinter, mp *Message
 		tag := f.GetNumber()
 		field_type := getTypeNameInfo(f).deca_enum_name
 		src += "    "
-		src += fmt.Sprintf("%s->RegisterField(decaproto::FieldDescriptor(%d, %s));\n",
-			desc_name,
-			tag,
-			field_type)
+		if f.GetLabel() == descriptor.FieldDescriptorProto_LABEL_REPEATED {
+			src += fmt.Sprintf("%s->RegisterField(decaproto::FieldDescriptor(%d, %s, true));\n",
+				desc_name,
+				tag,
+				field_type)
+		} else {
+			src += fmt.Sprintf("%s->RegisterField(decaproto::FieldDescriptor(%d, %s));\n",
+				desc_name,
+				tag,
+				field_type)
+		}
 	}
 	src += "    return " + desc_name + ";\n"
 	src += "}\n"

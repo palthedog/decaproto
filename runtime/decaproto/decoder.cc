@@ -130,50 +130,50 @@ bool DecodeVarint(
     switch (field->GetType()) {
         case kInt32:
             if (field->IsRepeated()) {
-                reflection->AddInt32(message, tag, value);
+                *reflection->AddRepeatedInt32(message, tag) = value;
             } else {
                 reflection->SetInt32(message, tag, value);
             }
             return true;
         case kUInt32:
             if (field->IsRepeated()) {
-                reflection->AddUInt32(message, tag, value);
+                *reflection->AddRepeatedUInt32(message, tag) = value;
             } else {
                 reflection->SetUInt32(message, tag, value);
             }
             return true;
         case kBool:
             if (field->IsRepeated()) {
-                reflection->AddBool(message, tag, value);
+                *reflection->AddRepeatedBool(message, tag) = value;
             } else {
                 reflection->SetBool(message, tag, value);
             }
             return true;
         case kEnum:
             if (field->IsRepeated()) {
-                reflection->AddEnumValue(message, tag, value);
+                *reflection->AddRepeatedEnumValue(message, tag) = value;
             } else {
                 reflection->SetEnumValue(message, tag, value);
             }
             return true;
         case kInt64:
             if (field->IsRepeated()) {
-                reflection->AddInt64(message, tag, value);
+                *reflection->AddRepeatedInt64(message, tag) = value;
             } else {
                 reflection->SetInt64(message, tag, value);
             }
             return true;
         case kUInt64:
             if (field->IsRepeated()) {
-                reflection->AddUInt64(message, tag, value);
+                *reflection->AddRepeatedUInt64(message, tag) = value;
             } else {
                 reflection->SetUInt64(message, tag, value);
             }
             return true;
         case kSInt32:
             if (field->IsRepeated()) {
-                reflection->AddInt32(
-                        message, tag, CodedInputStream::DecodeZigZag(value));
+                *reflection->AddRepeatedInt32(message, tag) =
+                        CodedInputStream::DecodeZigZag(value);
             } else {
                 reflection->SetInt32(
                         message, tag, CodedInputStream::DecodeZigZag(value));
@@ -181,8 +181,8 @@ bool DecodeVarint(
             return true;
         case kSInt64:
             if (field->IsRepeated()) {
-                reflection->AddInt64(
-                        message, tag, CodedInputStream::DecodeZigZag(value));
+                *reflection->AddRepeatedInt64(message, tag) =
+                        CodedInputStream::DecodeZigZag(value);
             } else {
                 reflection->SetInt64(
                         message, tag, CodedInputStream::DecodeZigZag(value));
@@ -212,24 +212,25 @@ bool DecodeFixedInt32(
     switch (field->GetType()) {
         case kFixed32:
             if (field->IsRepeated()) {
-                reflection->AddUInt32(message, field->GetFieldNumber(), value);
+                *reflection->AddRepeatedUInt32(
+                        message, field->GetFieldNumber()) = value;
             } else {
                 reflection->SetUInt32(message, field->GetFieldNumber(), value);
             }
             return true;
         case kSfixed32:
             if (field->IsRepeated()) {
-                reflection->AddInt32(message, field->GetFieldNumber(), value);
+                *reflection->AddRepeatedInt32(
+                        message, field->GetFieldNumber()) = value;
             } else {
                 reflection->SetInt32(message, field->GetFieldNumber(), value);
             }
             return true;
         case kFloat:
             if (field->IsRepeated()) {
-                reflection->AddFloat(
-                        message,
-                        field->GetFieldNumber(),
-                        MemcpyCast<uint32_t, float>(value));
+                *reflection->AddRepeatedFloat(
+                        message, field->GetFieldNumber()) =
+                        MemcpyCast<uint32_t, float>(value);
             } else {
                 reflection->SetFloat(
                         message,
@@ -263,24 +264,25 @@ bool DecodeFixedInt64(
     switch (field->GetType()) {
         case kFixed64:
             if (field->IsRepeated()) {
-                reflection->AddUInt64(message, field->GetFieldNumber(), value);
+                *reflection->AddRepeatedUInt64(
+                        message, field->GetFieldNumber()) = value;
             } else {
                 reflection->SetUInt64(message, field->GetFieldNumber(), value);
             }
             return true;
         case kSfixed64:
             if (field->IsRepeated()) {
-                reflection->AddInt64(message, field->GetFieldNumber(), value);
+                *reflection->AddRepeatedInt64(
+                        message, field->GetFieldNumber()) = value;
             } else {
                 reflection->SetInt64(message, field->GetFieldNumber(), value);
             }
             return true;
         case kDouble:
             if (field->IsRepeated()) {
-                reflection->AddDouble(
-                        message,
-                        field->GetFieldNumber(),
-                        MemcpyCast<uint64_t, double>(value));
+                *reflection->AddRepeatedDouble(
+                        message, field->GetFieldNumber()) =
+                        MemcpyCast<uint64_t, double>(value);
             } else {
                 reflection->SetDouble(
                         message,
@@ -316,15 +318,15 @@ bool DecodeLenPrefix(
         case kString: {
             // TODO: Implement Reflection::MutableString so that we can set
             // string w/o memory allocation here.
-            string value;
-            if (!cis.ReadString(value, size)) {
+            string* value;
+            if (field->IsRepeated()) {
+                value = reflection->AddRepeatedString(message, tag);
+            } else {
+                value = reflection->MutableString(message, tag);
+            }
+            if (!cis.ReadString(*value, size)) {
                 cerr << "Failed to read string" << endl;
                 return false;
-            }
-            if (field->IsRepeated()) {
-                reflection->AddString(message, tag, value);
-            } else {
-                reflection->SetString(message, tag, value);
             }
             return true;
         }
@@ -335,7 +337,7 @@ bool DecodeLenPrefix(
         case kMessage: {
             Message* sub_message;
             if (field->IsRepeated()) {
-                sub_message = reflection->AddMessage(message, tag);
+                sub_message = reflection->AddRepeatedMessage(message, tag);
             } else {
                 sub_message = reflection->MutableMessage(message, tag);
             }
@@ -363,11 +365,14 @@ bool DecodeMessage(
         const Descriptor* descriptor) {
     //  message    := (tag value)*
 
+    cerr << "DecodeMessage" << endl;
+
     uint32_t field_number;
     WireType wire_type;
 
     size_t consumed_start_size = cis.ConsumedSize();
-
+    cerr << "DecodeMessage. consumed start: " << consumed_start_size << endl;
+    cerr << "   len: " << size << endl;
     while ((cis.ConsumedSize() - consumed_start_size) < size &&
            DecodeTag(cis, field_number, wire_type)) {
         const FieldDescriptor* field =
@@ -439,6 +444,9 @@ bool DecodeMessage(
         }
     }
 
+    cerr << "End of DecodeMessage. consumed start: start: "
+         << cis.ConsumedSize() << endl;
+
     if (size == SIZE_MAX) {
         // The callder doesn't care about the message size.
         return true;
@@ -446,8 +454,12 @@ bool DecodeMessage(
 
     if ((cis.ConsumedSize() - consumed_start_size) != size) {
         cerr << "The message size is not matched. Expected: " << size
-             << ", Consumed: " << cis.ConsumedSize() << endl;
+             << ", Consumed: " << (cis.ConsumedSize() - consumed_start_size)
+             << endl;
         return false;
+    } else {
+        cerr << "Length check OK: "
+             << (cis.ConsumedSize() - consumed_start_size) << endl;
     }
     return true;
 }

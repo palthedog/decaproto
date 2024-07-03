@@ -23,6 +23,8 @@ const decaproto::Descriptor* FakeMessage::GetDescriptor() const {
             FieldDescriptor(kEnumFieldTag, FieldType::kEnum));
     kTestDescriptor->RegisterField(
             FieldDescriptor(kRepNumsTag, FieldType::kUInt32, true));
+    kTestDescriptor->RegisterField(
+            FieldDescriptor(kRepEnumsTag, FieldType::kEnum, true));
     return kTestDescriptor;
 }
 
@@ -39,7 +41,8 @@ const Reflection* FakeMessage::GetReflection() const {
     kTestReflection->RegisterGetUInt32(kNumTag, MsgCast(&FakeMessage::num));
 
     // string str = 2
-    kTestReflection->RegisterSetString(kStrTag, MsgCast(&FakeMessage::set_str));
+    kTestReflection->RegisterMutableString(
+            kStrTag, MsgCast(&FakeMessage::mutable_str));
     kTestReflection->RegisterGetString(kStrTag, MsgCast(&FakeMessage::str));
 
     // OtherMessage other = 3
@@ -55,8 +58,28 @@ const Reflection* FakeMessage::GetReflection() const {
             kEnumFieldTag, CastForGetEnumValue(&FakeMessage::enum_field));
 
     // repeated uint32 rep_nums = 5
-    kTestReflection->RegisterMutableRepeatedRef(
-            kRepNumsTag, MsgCast(&FakeMessage::mutable_rep_nums));
+    kTestReflection->RegisterGetRepeatedUInt32(
+            kRepNumsTag, MsgCast(&FakeMessage::get_rep_nums));
+    // kTestReflection->RegisterSetRepeatedUInt32(
+    // kRepNumsTag, MsgCast(&FakeMessage::set_rep_nums));
+    kTestReflection->RegisterAddRepeatedUInt32(
+            kRepNumsTag, MsgCast(&FakeMessage::add_rep_nums));
+    kTestReflection->RegisterFieldSize(
+            kRepNumsTag, MsgCast(&FakeMessage::rep_nums_size));
+
+    // repeated Fake rep_enums = 6
+    kTestReflection->RegisterGetRepeatedEnumValue(
+            kRepEnumsTag, MsgCast(&FakeMessage::get_rep_enums));
+    /*
+kTestReflection->RegisterSetRepeatedEnumValue(
+    kRepEnumsTag,
+    CastForSetRepeatedEnumValue(&FakeMessage::set_rep_enums));
+    */
+    kTestReflection->RegisterAddRepeatedEnumValue(
+            kRepEnumsTag,
+            CastForAddRepeatedEnumValue(&FakeMessage::add_rep_enums));
+    kTestReflection->RegisterFieldSize(
+            kRepEnumsTag, MsgCast(&FakeMessage::rep_enums_size));
 
     return kTestReflection;
 }

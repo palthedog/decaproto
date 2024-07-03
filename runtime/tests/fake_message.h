@@ -1,11 +1,11 @@
 #ifndef FAKE_MESSAGE_H
 #define FAKE_MESSAGE_H
 
-#include <memory>
 #include <string>
 #include <vector>
 
 #include "decaproto/descriptor.h"
+#include "decaproto/field.h"
 #include "decaproto/message.h"
 #include "decaproto/reflection.h"
 #include "decaproto/reflection_util.h"
@@ -42,6 +42,7 @@ const int kStrTag = 2;
 const int kOtherTag = 3;
 const int kEnumFieldTag = 4;
 const int kRepNumsTag = 5;
+const int kRepEnumsTag = 6;
 class FakeMessage : public decaproto::Message {
     // uint32 num = 1
     uint32_t num_;
@@ -50,7 +51,7 @@ class FakeMessage : public decaproto::Message {
     std::string str_;
 
     // OtherMessage other = 3
-    mutable std::unique_ptr<FakeOtherMessage> other_;
+    mutable decaproto::SubMessagePtr<FakeOtherMessage> other_;
     bool has_other_;
 
     // FakeEnum enum_field= 4
@@ -59,6 +60,9 @@ class FakeMessage : public decaproto::Message {
 
     // repeated uint32 rep_nums = 5
     std::vector<uint32_t> rep_nums_;
+
+    // repeated uint32 rep_nums = 6
+    std::vector<FakeEnum> rep_enums_;
 
 public:
     FakeMessage()
@@ -88,20 +92,24 @@ public:
         return str_;
     }
 
+    std::string* mutable_str() {
+        return &str_;
+    }
+
     bool has_other() {
         return has_other_;
     }
 
     const FakeOtherMessage& other() const {
         if (!other_) {
-            other_ = std::make_unique<FakeOtherMessage>();
+            other_.resetDefault();
         }
         return *other_;
     }
 
     FakeOtherMessage* mutable_other() {
         if (!other_) {
-            other_ = std::make_unique<FakeOtherMessage>();
+            other_.resetDefault();
         }
         has_other_ = true;
         return other_.get();
@@ -131,6 +139,48 @@ public:
 
     std::vector<uint32_t>* mutable_rep_nums() {
         return &rep_nums_;
+    }
+
+    uint32_t get_rep_nums(size_t index) const {
+        return rep_nums_[index];
+    }
+
+    void set_rep_nums(size_t index, uint32_t value) {
+        rep_nums_[index] = value;
+    }
+
+    uint32_t* add_rep_nums() {
+        rep_nums_.push_back(0);
+        return &rep_nums_.back();
+    }
+
+    size_t rep_nums_size() const {
+        return rep_nums_.size();
+    }
+
+    const std::vector<FakeEnum>& rep_enums() const {
+        return rep_enums_;
+    }
+
+    std::vector<FakeEnum>* mutable_rep_enums() {
+        return &rep_enums_;
+    }
+
+    uint32_t get_rep_enums(size_t index) const {
+        return rep_enums_[index];
+    }
+
+    void set_rep_enums(size_t index, FakeEnum value) {
+        rep_enums_[index] = value;
+    }
+
+    FakeEnum* add_rep_enums() {
+        rep_enums_.push_back(FakeEnum());
+        return &rep_enums_.back();
+    }
+
+    size_t rep_enums_size() const {
+        return rep_enums_.size();
     }
 
     const decaproto::Descriptor* GetDescriptor() const override;

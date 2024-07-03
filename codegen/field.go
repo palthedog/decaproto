@@ -133,22 +133,20 @@ func processField(msg_printer *MessagePrinter, f *descriptor.FieldDescriptorProt
 	type_name_info := getTypeNameInfo(f)
 	if f.GetLabel() == descriptor.FieldDescriptorProto_LABEL_REPEATED {
 		// repeated
-		if isPrimitiveType(f) {
-			// primitive types
-			addRepeatedField(f, &type_name_info, msg_printer)
-		} else if f.GetType() == descriptor.FieldDescriptorProto_TYPE_STRING {
-			// string
-			addRepeatedField(f, &type_name_info, msg_printer)
-		} else if f.GetType() == descriptor.FieldDescriptorProto_TYPE_ENUM {
-			// enum
-			addRepeatedField(f, &type_name_info, msg_printer)
+		if isPrimitiveType(f) || f.GetType() == descriptor.FieldDescriptorProto_TYPE_ENUM {
+			// primitive types, enum
+			addRepeatedPrimitiveField(f, &type_name_info, msg_printer)
+		} else if f.GetType() == descriptor.FieldDescriptorProto_TYPE_STRING ||
+			f.GetType() == descriptor.FieldDescriptorProto_TYPE_MESSAGE {
+			// string, message
+			addRepeatedObjectField(f, &type_name_info, msg_printer)
 		} else {
 			log.Fatal("Unsupported repeated field type", f.GetType(), f.GetName())
 		}
 	} else if f.GetLabel() == descriptor.FieldDescriptorProto_LABEL_OPTIONAL {
 		// optional
 		if isPrimitiveType(f) || f.GetType() == descriptor.FieldDescriptorProto_TYPE_ENUM {
-			// primitive types | enum
+			// primitive types,  enum
 			addPrimitiveField(f, &type_name_info, msg_printer)
 		} else if f.GetType() == descriptor.FieldDescriptorProto_TYPE_STRING {
 			// string
@@ -222,6 +220,10 @@ func addStringField(f *descriptor.FieldDescriptorProto, type_name_info *TypeName
 	    {{.holder_name}} = value;
 	}
 
+	inline std::string* mutable_{{.f_name}}() {
+	    return &{{.holder_name}};
+	}
+
 	inline void clear_{{.f_name}}() {
 	    {{.holder_name}}.clear();
 	}
@@ -229,7 +231,7 @@ func addStringField(f *descriptor.FieldDescriptorProto, type_name_info *TypeName
 			args))
 }
 
-func addRepeatedField(f *descriptor.FieldDescriptorProto, type_name_info *TypeNameInfo, msg_printer *MessagePrinter) {
+func addRepeatedPrimitiveField(f *descriptor.FieldDescriptorProto, type_name_info *TypeNameInfo, msg_printer *MessagePrinter) {
 	args := map[string]string{
 		"cc_type":     type_name_info.cc_type,
 		"holder_name": holderName(f),
@@ -248,8 +250,73 @@ func addRepeatedField(f *descriptor.FieldDescriptorProto, type_name_info *TypeNa
 	    return {{.holder_name}};
 	}
 
+	inline {{.cc_type}} get_{{.f_name}}(size_t index) const {
+	    return {{.holder_name}}[index];
+	}
+
+	inline size_t {{.f_name}}_size() const {
+	    return {{.holder_name}}.size();
+	}
+
+	inline void set_{{.f_name}}(size_t index, {{.cc_type}} value) {
+	    {{.holder_name}}[index] = value;
+	}
+
 	inline std::vector<{{.cc_type}}>* mutable_{{.f_name}}() {
 		return &{{.holder_name}};
+	}
+
+	inline {{.cc_type}}* add_{{.f_name}}() {
+	    {{.holder_name}}.push_back({{.cc_type}}());
+		return &{{.holder_name}}.back();
+	}
+
+	inline void clear_{{.f_name}}() {
+	    {{.holder_name}}.clear();
+	}
+
+`,
+			args))
+}
+
+func addRepeatedObjectField(f *descriptor.FieldDescriptorProto, type_name_info *TypeNameInfo, msg_printer *MessagePrinter) {
+	args := map[string]string{
+		"cc_type":     type_name_info.cc_type,
+		"holder_name": holderName(f),
+		"f_name":      f.GetName(),
+	}
+
+	msg_printer.PushInitializer(
+		print("init_default_values", "{{.holder_name}}()", args))
+
+	msg_printer.PushPrivate(
+		print("pri_rep_pri", "    std::vector<{{.cc_type}}> {{.holder_name}};\n", args))
+
+	msg_printer.PushPublic(
+		print("pub_rep_pri", `
+	inline const std::vector<{{.cc_type}}>& {{.f_name}}() const {
+	    return {{.holder_name}};
+	}
+
+	inline const {{.cc_type}}& get_{{.f_name}}(size_t index) const {
+	    return {{.holder_name}}[index];
+	}
+
+	inline size_t {{.f_name}}_size() const {
+	    return {{.holder_name}}.size();
+	}
+
+	inline void set_{{.f_name}}(size_t index, const {{.cc_type}}& value) {
+	    {{.holder_name}}[index] = value;
+	}
+
+	inline std::vector<{{.cc_type}}>* mutable_{{.f_name}}() {
+		return &{{.holder_name}};
+	}
+
+	inline {{.cc_type}}* add_{{.f_name}}() {
+	    {{.holder_name}}.push_back({{.cc_type}}());
+		return &{{.holder_name}}.back();
 	}
 
 	inline void clear_{{.f_name}}() {
@@ -275,7 +342,7 @@ func addMessageField(f *descriptor.FieldDescriptorProto, type_name *TypeNameInfo
 
 	msg_printer.PushPrivate(
 		print("pri_rep_pri",
-			"    mutable std::unique_ptr<{{.cc_type}}> {{.holder_name}};\n"+
+			"    mutable decaproto::SubMessagePtr<{{.cc_type}}> {{.holder_name}};\n"+
 				"    bool {{.has_holder_name}};\n",
 			args))
 
@@ -285,7 +352,8 @@ func addMessageField(f *descriptor.FieldDescriptorProto, type_name *TypeNameInfo
 	// Getter for {{.f_name}}
 	const {{.cc_type}}& {{.f_name}}() const {
 		if (!{{.holder_name}}) {
-			{{.holder_name}} = std::make_unique<{{.cc_type}}>();
+			//{{.holder_name}}.reset(new {{.cc_type}}());
+			{{.holder_name}}.resetDefault();
         }
 	    return *{{.holder_name}};
 	}
@@ -293,7 +361,8 @@ func addMessageField(f *descriptor.FieldDescriptorProto, type_name *TypeNameInfo
 	// Mutable Getter for {{.f_name}}
 	{{.cc_type}}* mutable_{{.f_name}}() {
 	    if (!{{.holder_name}}) {
-			{{.holder_name}} = std::make_unique<{{.cc_type}}>();
+			//{{.holder_name}}.reset(new {{.cc_type}}());
+			{{.holder_name}}.resetDefault();
         }
         {{.has_holder_name}} = true;
 	    return {{.holder_name}}.get();

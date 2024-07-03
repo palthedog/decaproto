@@ -1,6 +1,8 @@
 #ifndef DECAPROTO_MESSAGE_H
 #define DECAPROTO_MESSAGE_H
 
+#include <iostream>
+
 #include "decaproto/descriptor.h"
 #include "decaproto/reflection.h"
 
@@ -13,6 +15,7 @@ public:
     }
 
     virtual ~Message() {
+        std::cerr << "destracting Message" << std::endl;
     }
 
     virtual const Descriptor* GetDescriptor() const = 0;

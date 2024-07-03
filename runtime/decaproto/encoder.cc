@@ -1,7 +1,6 @@
 #include "decaproto/encoder.h"
 
 #include <iostream>
-
 // For WireType
 // It should be defined elsewhere?
 #include "decaproto/decoder.h"
@@ -49,12 +48,16 @@ size_t ComputeEncodedFieldSize(
     size_t size = 0;
 
     uint32_t tag = field_desc.GetFieldNumber();
+    size_t field_count = 1;
+    if (field_desc.IsRepeated()) {
+        field_count = reflection->FieldSize(&message, tag);
+    }
+
     switch (field_desc.GetType()) {
-        case FieldType::kSInt32:
         case FieldType::kInt32:
             if (field_desc.IsRepeated()) {
-                for (int32_t value :
-                     reflection->GetRepeatedRef<int32_t>(&message, tag)) {
+                for (size_t i = 0; i < field_count; i++) {
+                    auto value = reflection->GetRepeatedInt32(&message, tag, i);
                     size += 1;  // tag
                     size += ComputeEncodedVarintSize(value);
                 }
@@ -66,11 +69,28 @@ size_t ComputeEncodedFieldSize(
                 }
             }
             break;
-        case FieldType::kBool:
+        case FieldType::kSInt32:
+            if (field_desc.IsRepeated()) {
+                for (size_t i = 0; i < field_count; i++) {
+                    auto value = CodedOutputStream::EncodeZigZag(
+                            reflection->GetRepeatedInt32(&message, tag, i));
+                    size += 1;  // tag
+                    size += ComputeEncodedVarintSize(value);
+                }
+            } else {
+                int32_t value = CodedOutputStream::EncodeZigZag(
+                        reflection->GetInt32(&message, tag));
+                if (value != 0) {
+                    size += 1;  // tag
+                    size += ComputeEncodedVarintSize(value);
+                }
+            }
+            break;
         case FieldType::kUInt32:
             if (field_desc.IsRepeated()) {
-                for (uint32_t value :
-                     reflection->GetRepeatedRef<uint32_t>(&message, tag)) {
+                for (size_t i = 0; i < field_count; i++) {
+                    auto value =
+                            reflection->GetRepeatedUInt32(&message, tag, i);
                     size += 1;  // tag
                     size += ComputeEncodedVarintSize(value);
                 }
@@ -82,11 +102,26 @@ size_t ComputeEncodedFieldSize(
                 }
             }
             break;
-        case FieldType::kSInt64:
+        case FieldType::kBool:
+            if (field_desc.IsRepeated()) {
+                for (size_t i = 0; i < field_count; i++) {
+                    auto value =
+                            reflection->GetRepeatedUInt32(&message, tag, i);
+                    size += 1;  // tag
+                    size += ComputeEncodedVarintSize(value);
+                }
+            } else {
+                uint32_t value = reflection->GetBool(&message, tag) ? 1 : 0;
+                if (value != 0) {
+                    size += 1;  // tag
+                    size += ComputeEncodedVarintSize(value);
+                }
+            }
+            break;
         case FieldType::kInt64:
             if (field_desc.IsRepeated()) {
-                for (int64_t value :
-                     reflection->GetRepeatedRef<int64_t>(&message, tag)) {
+                for (size_t i = 0; i < field_count; i++) {
+                    auto value = reflection->GetRepeatedInt64(&message, tag, i);
                     size += 1;  // tag
                     size += ComputeEncodedVarintSize(value);
                 }
@@ -98,10 +133,28 @@ size_t ComputeEncodedFieldSize(
                 }
             }
             break;
+        case FieldType::kSInt64:
+            if (field_desc.IsRepeated()) {
+                for (size_t i = 0; i < field_count; i++) {
+                    int64_t value = CodedOutputStream::EncodeZigZag(
+                            reflection->GetRepeatedInt64(&message, tag, i));
+                    size += 1;  // tag
+                    size += ComputeEncodedVarintSize(value);
+                }
+            } else {
+                int64_t value = CodedOutputStream::EncodeZigZag(
+                        reflection->GetInt64(&message, tag));
+                if (value != 0) {
+                    size += 1;  // tag
+                    size += ComputeEncodedVarintSize(value);
+                }
+            }
+            break;
         case FieldType::kUInt64:
             if (field_desc.IsRepeated()) {
-                for (int64_t value :
-                     reflection->GetRepeatedRef<uint64_t>(&message, tag)) {
+                for (size_t i = 0; i < field_count; i++) {
+                    auto value =
+                            reflection->GetRepeatedUInt64(&message, tag, i);
                     size += 1;  // tag
                     size += ComputeEncodedVarintSize(value);
                 }
@@ -115,8 +168,9 @@ size_t ComputeEncodedFieldSize(
             break;
         case FieldType::kString:
             if (field_desc.IsRepeated()) {
-                for (const string& value :
-                     reflection->GetRepeatedRef<string>(&message, tag)) {
+                for (size_t i = 0; i < field_count; i++) {
+                    auto& value =
+                            reflection->GetRepeatedString(&message, tag, i);
                     // tag
                     size += 1;
                     // LEN
@@ -140,8 +194,9 @@ size_t ComputeEncodedFieldSize(
             break;
         case FieldType::kEnum:
             if (field_desc.IsRepeated()) {
-                for (int32_t value :
-                     reflection->GetRepeatedRef<int32_t>(&message, tag)) {
+                for (size_t i = 0; i < field_count; i++) {
+                    auto value =
+                            reflection->GetRepeatedEnumValue(&message, tag, i);
                     size += 1;  // tag
                     size += ComputeEncodedVarintSize(value);
                 }
@@ -155,10 +210,10 @@ size_t ComputeEncodedFieldSize(
             break;
         case FieldType::kMessage:
             if (field_desc.IsRepeated()) {
-                for (const Message& value :
-                     reflection->GetRepeatedRef<Message>(&message, tag)) {
+                for (size_t i = 0; i < field_count; i++) {
+                    auto& value =
+                            reflection->GetRepeatedMessage(&message, tag, i);
                     size_t sub_msg_size = ComputeEncodedSize(value);
-
                     // tag
                     size += 1;
                     // LEN
@@ -181,65 +236,68 @@ size_t ComputeEncodedFieldSize(
             }
             break;
         case FieldType::kDouble: {
-            size_t field_count = 1;
-            if (field_desc.IsRepeated()) {
-                field_count = reflection->GetRepeatedRef<double>(&message, tag)
-                                      .size();
-            }
             // tag (1) + double size (8)
-            size += (1 + 8) * field_count;
+            if (field_desc.IsRepeated()) {
+                size += (1 + 8) * field_count;
+            } else {
+                double value = reflection->GetDouble(&message, tag);
+                if (value != 0.0f) {
+                    size += 1 + 8;
+                }
+            }
             break;
         }
         case FieldType::kFloat: {
-            size_t field_count = 1;
-            if (field_desc.IsRepeated()) {
-                field_count =
-                        reflection->GetRepeatedRef<float>(&message, tag).size();
-            }
             // tag (1) + float size (4)
-            size += (1 + 4) * field_count;
+            if (field_desc.IsRepeated()) {
+                size += (1 + 4) * field_count;
+            } else {
+                float value = reflection->GetFloat(&message, tag);
+                if (value != 0.0) {
+                    size += 1 + 4;
+                }
+            }
             break;
         }
         case FieldType::kFixed32: {
-            size_t field_count = 1;
-            if (field_desc.IsRepeated()) {
-                field_count =
-                        reflection->GetRepeatedRef<uint32_t>(&message, tag)
-                                .size();
-            }
             // tag (1) + int32 size (4)
-            size += (1 + 4) * field_count;
+            if (field_desc.IsRepeated()) {
+                size += (1 + 4) * field_count;
+            } else {
+                uint32_t value = reflection->GetUInt32(&message, tag);
+                if (value != 0) {
+                    size += 1 + 4;
+                }
+            }
             break;
         }
         case FieldType::kSfixed32: {
-            size_t field_count = 1;
-            if (field_desc.IsRepeated()) {
-                field_count = reflection->GetRepeatedRef<int32_t>(&message, tag)
-                                      .size();
-            }
             // tag (1) + int32 size (4)
-            size += (1 + 4) * field_count;
+            if (field_desc.IsRepeated()) {
+                size += (1 + 4) * field_count;
+            } else {
+                int32_t value = reflection->GetInt32(&message, tag);
+                if (value != 0) {
+                    size += 1 + 4;
+                }
+            }
             break;
         }
         case FieldType::kFixed64: {
-            size_t field_count = 1;
-            if (field_desc.IsRepeated()) {
-                field_count =
-                        reflection->GetRepeatedRef<uint64_t>(&message, tag)
-                                .size();
-            }
             // tag (1) + int32 size (8)
             size += (1 + 8) * field_count;
             break;
         }
         case FieldType::kSfixed64: {
-            size_t field_count = 1;
-            if (field_desc.IsRepeated()) {
-                field_count = reflection->GetRepeatedRef<int64_t>(&message, tag)
-                                      .size();
-            }
             // tag (1) + int32 size (8)
-            size += (1 + 8) * field_count;
+            if (field_desc.IsRepeated()) {
+                size += (1 + 8) * field_count;
+            } else {
+                int64_t value = reflection->GetInt64(&message, tag);
+                if (value != 0) {
+                    size += 1 + 8;
+                }
+            }
             break;
         }
         case FieldType::kBytes:
@@ -287,12 +345,15 @@ bool EncodeFieldImpl(
         const Reflection* reflection,
         const FieldDescriptor& field_desc,
         T (Reflection::*p_get)(const Message*, uint32_t) const,
+        T (Reflection::*p_get_repeated)(const Message*, uint32_t, size_t) const,
         bool (CodedOutputStream::*p_write)(EncT)) {
     uint32_t tag = field_desc.GetFieldNumber();
     if (field_desc.IsRepeated()) {
         // Treat enum values as int since we don't know the enum type
         // here
-        for (T value : reflection->GetRepeatedRef<T>(&message, tag)) {
+        size_t field_count = reflection->FieldSize(&message, tag);
+        for (size_t i = 0; i < field_count; i++) {
+            T value = (reflection->*p_get_repeated)(&message, tag, i);
             if (!EncodeTag(stream, field_desc) ||
                 !(stream.*p_write)(MemcpyCast<T, EncT>(value))) {
                 return false;
@@ -324,6 +385,7 @@ bool EncodeField(
                     reflection,
                     field_desc,
                     &Reflection::GetInt32,
+                    &Reflection::GetRepeatedInt32,
                     &CodedOutputStream::WriteVarint32);
         case FieldType::kUInt32:
             return EncodeFieldImpl<uint32_t, uint32_t>(
@@ -332,6 +394,7 @@ bool EncodeField(
                     reflection,
                     field_desc,
                     &Reflection::GetUInt32,
+                    &Reflection::GetRepeatedUInt32,
                     &CodedOutputStream::WriteVarint32);
             break;
         case FieldType::kInt64:
@@ -341,6 +404,7 @@ bool EncodeField(
                     reflection,
                     field_desc,
                     &Reflection::GetInt64,
+                    &Reflection::GetRepeatedInt64,
                     &CodedOutputStream::WriteVarint64);
 
         case FieldType::kUInt64:
@@ -350,11 +414,14 @@ bool EncodeField(
                     reflection,
                     field_desc,
                     &Reflection::GetUInt64,
+                    &Reflection::GetRepeatedUInt64,
                     &CodedOutputStream::WriteVarint64);
         case FieldType::kString:
             if (field_desc.IsRepeated()) {
-                for (const string& value :
-                     reflection->GetRepeatedRef<string>(&message, tag)) {
+                size_t field_count = reflection->FieldSize(&message, tag);
+                for (size_t i = 0; i < field_count; i++) {
+                    const string& value =
+                            reflection->GetRepeatedString(&message, tag, i);
                     // tag
                     if (!EncodeTag(stream, field_desc) ||
                         // LEN
@@ -365,8 +432,8 @@ bool EncodeField(
                     }
                 }
             } else {
-                // TODO: Implement hasser in reflection and use it to prevent
-                // memory allocation here.
+                // TODO: Implement hasser in reflection and use it to
+                // prevent memory allocation here.
                 string value = reflection->GetString(&message, tag);
                 if (!value.empty()) {
                     // tag
@@ -389,11 +456,14 @@ bool EncodeField(
                     reflection,
                     field_desc,
                     &Reflection::GetEnumValue,
+                    &Reflection::GetRepeatedEnumValue,
                     &CodedOutputStream::WriteVarint64);
         case FieldType::kMessage:
             if (field_desc.IsRepeated()) {
-                for (const Message& value :
-                     reflection->GetRepeatedRef<Message>(&message, tag)) {
+                size_t field_count = reflection->FieldSize(&message, tag);
+                for (size_t i = 0; i < field_count; i++) {
+                    const Message& value =
+                            reflection->GetRepeatedMessage(&message, tag, i);
                     size_t sub_msg_size = ComputeEncodedSize(value);
                     // tag
                     if (!EncodeTag(stream, field_desc) ||
@@ -435,6 +505,7 @@ bool EncodeField(
                     reflection,
                     field_desc,
                     &Reflection::GetDouble,
+                    &Reflection::GetRepeatedDouble,
                     &CodedOutputStream::WriteFixedInt64);
         case kFloat:
             return EncodeFieldImpl<float, uint32_t>(
@@ -443,6 +514,7 @@ bool EncodeField(
                     reflection,
                     field_desc,
                     &Reflection::GetFloat,
+                    &Reflection::GetRepeatedFloat,
                     &CodedOutputStream::WriteFixedInt32);
         case kSInt32:
             return EncodeFieldImpl<int32_t, int32_t>(
@@ -451,6 +523,7 @@ bool EncodeField(
                     reflection,
                     field_desc,
                     &Reflection::GetInt32,
+                    &Reflection::GetRepeatedInt32,
                     &CodedOutputStream::WriteSignedVarint32);
         case kSInt64:
             return EncodeFieldImpl<int64_t, int64_t>(
@@ -459,6 +532,7 @@ bool EncodeField(
                     reflection,
                     field_desc,
                     &Reflection::GetInt64,
+                    &Reflection::GetRepeatedInt64,
                     &CodedOutputStream::WriteSignedVarint64);
         case kFixed32:
             return EncodeFieldImpl<uint32_t, uint32_t>(
@@ -467,6 +541,7 @@ bool EncodeField(
                     reflection,
                     field_desc,
                     &Reflection::GetUInt32,
+                    &Reflection::GetRepeatedUInt32,
                     &CodedOutputStream::WriteFixedInt32);
         case kFixed64:
             return EncodeFieldImpl<uint64_t, uint64_t>(
@@ -475,6 +550,7 @@ bool EncodeField(
                     reflection,
                     field_desc,
                     &Reflection::GetUInt64,
+                    &Reflection::GetRepeatedUInt64,
                     &CodedOutputStream::WriteFixedInt64);
         case kSfixed32:
             return EncodeFieldImpl<int32_t, uint32_t>(
@@ -483,6 +559,7 @@ bool EncodeField(
                     reflection,
                     field_desc,
                     &Reflection::GetInt32,
+                    &Reflection::GetRepeatedInt32,
                     &CodedOutputStream::WriteFixedInt32);
         case kSfixed64:
             return EncodeFieldImpl<int64_t, uint64_t>(
@@ -491,6 +568,7 @@ bool EncodeField(
                     reflection,
                     field_desc,
                     &Reflection::GetInt64,
+                    &Reflection::GetRepeatedInt64,
                     &CodedOutputStream::WriteFixedInt64);
         case kBool:
             return EncodeFieldImpl<bool, uint32_t>(
@@ -499,6 +577,7 @@ bool EncodeField(
                     reflection,
                     field_desc,
                     &Reflection::GetBool,
+                    &Reflection::GetRepeatedBool,
                     &CodedOutputStream::WriteVarint32);
         case kBytes:
         case kGroup:
@@ -506,7 +585,8 @@ bool EncodeField(
                  << field_desc.GetType() << endl;
             return false;
         case kUnknown:
-            cerr << "Unknown field type specified which should never be happen "
+            cerr << "Unknown field type specified which should never be "
+                    "happen "
                     "though"
                  << endl;
             return false;
@@ -520,7 +600,10 @@ bool EncodeMessage(
         const Reflection* reflection,
         const Descriptor* descriptor) {
     for (const FieldDescriptor& field_desc : descriptor->GetFields()) {
-        EncodeField(stream, message, reflection, field_desc);
+        if (!EncodeField(stream, message, reflection, field_desc)) {
+            cerr << "encode field failed: " << field_desc.GetFieldNumber()
+                 << endl;
+        }
     }
     return true;
 }

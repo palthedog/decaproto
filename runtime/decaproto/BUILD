@@ -8,6 +8,7 @@ cc_library(
         "decoder.h",
         "descriptor.h",
         "encoder.h",
+        "field.h",
         "message.h",
         "reflection.h",
         "reflection_util.h",

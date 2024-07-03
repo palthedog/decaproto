@@ -88,6 +88,19 @@ func (mp *MessagePrinter) printClassDefinition() string {
 	}
 	out += " {}\n\n"
 
+	/*
+		// Copy Constructor
+		out += "    " + mp.full_name + "(const " + mp.full_name + "& other)"
+		// TODO
+		out += " {}\n\n"
+	*/
+	// operator=
+	/*
+		out += "    const " + mp.full_name + "& operator=(const " + mp.full_name + "& other) {"
+
+		out += "}\n\n"
+	*/
+
 	// Destructor
 	out += "    ~" + mp.full_name + "() {}\n"
 	out += "\n"
@@ -264,6 +277,11 @@ func processReq(req *plugin.CodeGeneratorRequest) *plugin.CodeGeneratorResponse 
 		ctx.printer.addInclude("#include \"decaproto/message.h\"")
 		ctx.printer.addInclude("#include \"decaproto/descriptor.h\"")
 		ctx.printer.addInclude("#include \"decaproto/reflection.h\"")
+		ctx.printer.addInclude("#include \"decaproto/field.h\"")
+
+		for _, dep := range f.Dependency {
+			ctx.printer.addInclude("#include \"" + outputName(files[dep]) + ".h\"")
+		}
 
 		ctx.printer.source_content += "#include \"" + header_file_name + "\"\n"
 		ctx.printer.source_content += "\n"

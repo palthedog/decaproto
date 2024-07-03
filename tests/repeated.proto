@@ -1,7 +1,6 @@
 syntax = "proto3";
 
-// TODO
-// import "simple.proto";
+import "tests/simple.proto";
 
 enum RepeatedEnum {
   REP_UNKNOWN = 0;
@@ -14,4 +13,7 @@ message RepeatedMessage {
   repeated int32 nums = 1;
   repeated string strs = 2;
   repeated RepeatedEnum enum_values = 3;
+
+  repeated SimpleMessage simple_messages = 4;
+  repeated OtherMessage other_messages = 5;
 }

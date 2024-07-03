@@ -2,8 +2,9 @@ package main
 
 import (
 	"fmt"
-	descriptor "github.com/golang/protobuf/protoc-gen-go/descriptor"
 	"os"
+
+	descriptor "github.com/golang/protobuf/protoc-gen-go/descriptor"
 )
 
 func printReflection(m *descriptor.DescriptorProto, fp *FilePrinter, mp *MessagePrinter) {
@@ -30,18 +31,47 @@ func printReflection(m *descriptor.DescriptorProto, fp *FilePrinter, mp *Message
 		tag_str := fmt.Sprintf("%d", f.GetNumber())
 
 		if f.GetLabel() == descriptor.FieldDescriptorProto_LABEL_REPEATED {
-			src += print("reg_repeated_field", `
+			if f.GetType() == descriptor.FieldDescriptorProto_TYPE_ENUM {
+				src += print("reg_repeated_field", `
 			// Mutable getter for {{.field_name}}
-			{{.singleton_name}}->RegisterMutableRepeatedRef(
+			{{.singleton_name}}->RegisterGetRepeated{{.cc_camel_name}}(
 				{{.tag}},
-				decaproto::MsgCast(&{{.msg_full_name}}::mutable_{{.field_name}}));
+				decaproto::MsgCast(&{{.msg_full_name}}::get_{{.field_name}}));
+			{{.singleton_name}}->RegisterAddRepeated{{.cc_camel_name}}(
+				{{.tag}},
+				decaproto::CastForAddRepeatedEnumValue(&{{.msg_full_name}}::add_{{.field_name}}));
+			{{.singleton_name}}->RegisterFieldSize(
+				{{.tag}},
+				decaproto::MsgCast(&{{.msg_full_name}}::{{.field_name}}_size));
 		`,
-				map[string]string{
-					"singleton_name": singleton_name,
-					"tag":            tag_str,
-					"msg_full_name":  msg_full_name,
-					"field_name":     f.GetName(),
-				})
+					map[string]string{
+						"singleton_name": singleton_name,
+						"cc_camel_name":  type_name.cc_camel_name,
+						"tag":            tag_str,
+						"msg_full_name":  msg_full_name,
+						"field_name":     f.GetName(),
+					})
+			} else {
+				src += print("reg_repeated_field", `
+			// Mutable getter for {{.field_name}}
+			{{.singleton_name}}->RegisterGetRepeated{{.cc_camel_name}}(
+				{{.tag}},
+				decaproto::MsgCast(&{{.msg_full_name}}::get_{{.field_name}}));
+			{{.singleton_name}}->RegisterAddRepeated{{.cc_camel_name}}(
+				{{.tag}},
+				decaproto::MsgCast(&{{.msg_full_name}}::add_{{.field_name}}));
+			{{.singleton_name}}->RegisterFieldSize(
+				{{.tag}},
+				decaproto::MsgCast(&{{.msg_full_name}}::{{.field_name}}_size));
+		`,
+					map[string]string{
+						"singleton_name": singleton_name,
+						"cc_camel_name":  type_name.cc_camel_name,
+						"tag":            tag_str,
+						"msg_full_name":  msg_full_name,
+						"field_name":     f.GetName(),
+					})
+			}
 		} else if f.GetType() == descriptor.FieldDescriptorProto_TYPE_ENUM {
 			src += print("reg_enum_field", `
     // EnumValue setter for {{.field_name}}
@@ -59,16 +89,16 @@ func printReflection(m *descriptor.DescriptorProto, fp *FilePrinter, mp *Message
 					"msg_full_name":  msg_full_name,
 					"field_name":     f.GetName(),
 				})
-		} else if f.GetType() == descriptor.FieldDescriptorProto_TYPE_MESSAGE {
+		} else if f.GetType() == descriptor.FieldDescriptorProto_TYPE_MESSAGE || f.GetType() == descriptor.FieldDescriptorProto_TYPE_STRING {
 			// Message should be accessed via
 			// getter and mutable getter
 			src += print("reg_msg_field", `
     // Mutable getter for {{.field_name}}
-    {{.singleton_name}}->RegisterMutableMessage(
+    {{.singleton_name}}->RegisterMutable{{.cc_camel_name}}(
         {{.tag}},
 		decaproto::MsgCast(&{{.msg_full_name}}::mutable_{{.field_name}}));
     // Getter for {{.field_name}}
-    {{.singleton_name}}->RegisterGetMessage(
+    {{.singleton_name}}->RegisterGet{{.cc_camel_name}}(
         {{.tag}},
 		decaproto::MsgCast(&{{.msg_full_name}}::{{.field_name}}));
 `,
@@ -79,7 +109,7 @@ func printReflection(m *descriptor.DescriptorProto, fp *FilePrinter, mp *Message
 					"msg_full_name":  msg_full_name,
 					"field_name":     f.GetName(),
 				})
-		} else if isPrimitiveType(f) || f.GetType() == descriptor.FieldDescriptorProto_TYPE_STRING {
+		} else if isPrimitiveType(f) {
 			src += print("reg_field", `
     // Setter
     {{.singleton_name}}->RegisterSet{{.CcType}}(
