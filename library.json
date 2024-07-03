@@ -1,0 +1,9 @@
+{
+    "name": "Deca Proto",
+    "version": "0.0.1",
+    "build": {
+        "srcDir": "runtime/",
+        "srcFilter": "+<decaproto/> -<tests>",
+        "includeDir": "runtime/"
+    }
+}
