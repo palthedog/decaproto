@@ -16,3 +16,8 @@ NON-Goals
 - Optimize the runtime heavily.
 
   If you want a super efficient runtime, choose the original Protobuf
+
+## Currant Status
+Document is not ready yet but basic functionalities seem to be working.
+This end-to-end test would be useful to understand the current status, I guess: 
+[encode_decode_test.cc](https://github.com/palthedog/decaproto/blob/master/tests/encode_decode_test.cc)
