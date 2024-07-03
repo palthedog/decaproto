@@ -26,6 +26,8 @@ go_library(
         "@org_golang_google_protobuf//encoding/prototext",
         "@org_golang_google_protobuf//proto",
         "@org_golang_x_exp//maps:go_default_library",
+        "@org_golang_x_text//cases",
+        "@org_golang_x_text//language",
     ],
 )
 

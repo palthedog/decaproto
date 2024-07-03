@@ -16,15 +16,15 @@ enum FieldType {
 
     kInt32 = 3,
     kInt64 = 4,
-    kUInt32 = 5,
-    kUInt64 = 6,
-    kSInt32 = 7,
-    kSInt64 = 8,
+    kUint32 = 5,
+    kUint64 = 6,
+    kSint32 = 7,
+    kSint64 = 8,
 
     kFixed32 = 9,
     kFixed64 = 10,
-    kSFixed32 = 11,
-    kSFixed64 = 12,
+    kSfixed32 = 11,
+    kSfixed64 = 12,
 
     kBool = 13,
     kString = 14,

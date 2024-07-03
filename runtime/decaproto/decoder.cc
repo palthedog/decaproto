@@ -135,11 +135,11 @@ bool DecodeVarint(
                 reflection->SetInt32(message, tag, value);
             }
             return true;
-        case kUInt32:
+        case kUint32:
             if (field->IsRepeated()) {
-                *reflection->AddRepeatedUInt32(message, tag) = value;
+                *reflection->AddRepeatedUint32(message, tag) = value;
             } else {
-                reflection->SetUInt32(message, tag, value);
+                reflection->SetUint32(message, tag, value);
             }
             return true;
         case kBool:
@@ -163,27 +163,27 @@ bool DecodeVarint(
                 reflection->SetInt64(message, tag, value);
             }
             return true;
-        case kUInt64:
+        case kUint64:
             if (field->IsRepeated()) {
-                *reflection->AddRepeatedUInt64(message, tag) = value;
+                *reflection->AddRepeatedUint64(message, tag) = value;
             } else {
-                reflection->SetUInt64(message, tag, value);
+                reflection->SetUint64(message, tag, value);
             }
             return true;
-        case kSInt32:
+        case kSint32:
             value = CodedInputStream::DecodeZigZag32(value);
             if (field->IsRepeated()) {
-                *reflection->AddRepeatedSInt32(message, tag) = value;
+                *reflection->AddRepeatedSint32(message, tag) = value;
             } else {
-                reflection->SetSInt32(message, tag, value);
+                reflection->SetSint32(message, tag, value);
             }
             return true;
-        case kSInt64:
+        case kSint64:
             value = CodedInputStream::DecodeZigZag64(value);
             if (field->IsRepeated()) {
-                *reflection->AddRepeatedSInt64(message, tag) = value;
+                *reflection->AddRepeatedSint64(message, tag) = value;
             } else {
-                reflection->SetSInt64(message, tag, value);
+                reflection->SetSint64(message, tag, value);
             }
             return true;
         default:
@@ -216,12 +216,12 @@ bool DecodeFixedInt32(
                 reflection->SetFixed32(message, field->GetFieldNumber(), value);
             }
             return true;
-        case kSFixed32:
+        case kSfixed32:
             if (field->IsRepeated()) {
-                *reflection->AddRepeatedSFixed32(
+                *reflection->AddRepeatedSfixed32(
                         message, field->GetFieldNumber()) = value;
             } else {
-                reflection->SetSFixed32(
+                reflection->SetSfixed32(
                         message, field->GetFieldNumber(), value);
             }
             return true;
@@ -269,12 +269,12 @@ bool DecodeFixedInt64(
                 reflection->SetFixed64(message, field->GetFieldNumber(), value);
             }
             return true;
-        case kSFixed64:
+        case kSfixed64:
             if (field->IsRepeated()) {
-                *reflection->AddRepeatedSFixed64(
+                *reflection->AddRepeatedSfixed64(
                         message, field->GetFieldNumber()) = value;
             } else {
-                reflection->SetSFixed64(
+                reflection->SetSfixed64(
                         message, field->GetFieldNumber(), value);
             }
             return true;

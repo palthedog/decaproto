@@ -30,7 +30,7 @@ TEST(ReflectionTest, SimpleTest) {
     const Reflection* reflection = m.GetReflection();
 
     const FieldDescriptor& num_field = FindFieldDescriptor(descriptor, kNumTag);
-    reflection->SetUInt32(&m, num_field.GetFieldNumber(), 100);
+    reflection->SetUint32(&m, num_field.GetFieldNumber(), 100);
     const FieldDescriptor& str_field = FindFieldDescriptor(descriptor, kStrTag);
     *reflection->MutableString(&m, str_field.GetFieldNumber()) = "hello";
 
@@ -122,9 +122,9 @@ TEST(ReflectionTest, GetRepeatedFieldTest) {
 
     // Get and test elements through reflection
     EXPECT_EQ(3, reflection->FieldSize(&m, kRepNumsTag));
-    EXPECT_EQ(10, reflection->GetRepeatedUInt32(&m, kRepNumsTag, 0));
-    EXPECT_EQ(20, reflection->GetRepeatedUInt32(&m, kRepNumsTag, 1));
-    EXPECT_EQ(30, reflection->GetRepeatedUInt32(&m, kRepNumsTag, 2));
+    EXPECT_EQ(10, reflection->GetRepeatedUint32(&m, kRepNumsTag, 0));
+    EXPECT_EQ(20, reflection->GetRepeatedUint32(&m, kRepNumsTag, 1));
+    EXPECT_EQ(30, reflection->GetRepeatedUint32(&m, kRepNumsTag, 2));
 }
 
 TEST(ReflectionTest, SetRepeatedFieldTest) {
@@ -134,9 +134,9 @@ TEST(ReflectionTest, SetRepeatedFieldTest) {
     EXPECT_EQ(0, m.rep_nums().size());
 
     // Push values through reflection
-    *reflection->AddRepeatedUInt32(&m, kRepNumsTag) = 10;
-    *reflection->AddRepeatedUInt32(&m, kRepNumsTag) = 20;
-    *reflection->AddRepeatedUInt32(&m, kRepNumsTag) = 30;
+    *reflection->AddRepeatedUint32(&m, kRepNumsTag) = 10;
+    *reflection->AddRepeatedUint32(&m, kRepNumsTag) = 20;
+    *reflection->AddRepeatedUint32(&m, kRepNumsTag) = 30;
 
     EXPECT_EQ(3, m.rep_nums().size());
     EXPECT_EQ(10, m.rep_nums()[0]);

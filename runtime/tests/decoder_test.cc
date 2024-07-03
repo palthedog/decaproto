@@ -30,7 +30,7 @@ TEST(DecoderTest, DecodeSingularNumTest) {
     FakeMessage m;
     // Check that FakeMessage's field-1 is kUInt32 just for the confirmation
     EXPECT_EQ(
-            FieldType::kUInt32,
+            FieldType::kUint32,
             m.GetDescriptor()->FindFieldByNumber(kNumTag)->GetType());
 
     EXPECT_TRUE(DecodeMessage(ins, &m));
@@ -179,7 +179,7 @@ TEST(DecoderTest, DecodeRepeatedUInt32FieldTest) {
     // Check that FakeMessage's field-2 is repeated kUInt32 just for the
     // confirmation
     EXPECT_EQ(
-            FieldType::kUInt32,
+            FieldType::kUint32,
             m.GetDescriptor()->FindFieldByNumber(kRepNumsTag)->GetType());
     EXPECT_TRUE(
             m.GetDescriptor()->FindFieldByNumber(kRepNumsTag)->IsRepeated());
@@ -231,7 +231,7 @@ TEST(DecoderTest, DecodeRepeatedUInt32_StringInTheMiddle_FieldTest) {
     // Check that FakeMessage's field-2 is repeated kUInt32 just for the
     // confirmation
     EXPECT_EQ(
-            FieldType::kUInt32,
+            FieldType::kUint32,
             m.GetDescriptor()->FindFieldByNumber(kRepNumsTag)->GetType());
     EXPECT_TRUE(
             m.GetDescriptor()->FindFieldByNumber(kRepNumsTag)->IsRepeated());

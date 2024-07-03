@@ -5,6 +5,8 @@ import (
 	"strings"
 
 	descriptor "github.com/golang/protobuf/protoc-gen-go/descriptor"
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
 )
 
 type TypeNameInfo struct {
@@ -27,12 +29,13 @@ type TypeNameInfo struct {
 	cc_camel_name string
 }
 
-func NewPrimitiveTypeNameInfo(proto_name, deca_enum_name, cc_type, cc_camel_name string) TypeNameInfo {
+func NewPrimitiveTypeNameInfo(proto_name, cc_type string) TypeNameInfo {
+	camel_name := cases.Title(language.English, cases.Compact).String(proto_name)
 	return TypeNameInfo{
 		proto_name:     proto_name,
-		deca_enum_name: "decaproto::FieldType::" + deca_enum_name,
+		deca_enum_name: "decaproto::FieldType::k" + camel_name,
 		cc_type:        cc_type,
-		cc_camel_name:  cc_camel_name,
+		cc_camel_name:  camel_name,
 	}
 }
 
@@ -58,31 +61,31 @@ func NewGeneratedTypeNameInfo(deca_enum_name, cc_camel_name string) TypeNameInfo
 func getTypeNameInfoBase(f *descriptor.FieldDescriptorProto) TypeNameInfo {
 	switch f.GetType() {
 	case descriptor.FieldDescriptorProto_TYPE_UINT64:
-		return NewPrimitiveTypeNameInfo("uint64", "kUInt64", "uint64_t", "UInt64")
+		return NewPrimitiveTypeNameInfo("uint64", "uint64_t")
 	case descriptor.FieldDescriptorProto_TYPE_INT64:
-		return NewPrimitiveTypeNameInfo("int64", "kInt64", "int64_t", "Int64")
+		return NewPrimitiveTypeNameInfo("int64", "int64_t")
 	case descriptor.FieldDescriptorProto_TYPE_FIXED64:
-		return NewPrimitiveTypeNameInfo("fixed64", "kFixed64", "uint64_t", "Fixed64")
+		return NewPrimitiveTypeNameInfo("fixed64", "uint64_t")
 	case descriptor.FieldDescriptorProto_TYPE_SFIXED64:
-		return NewPrimitiveTypeNameInfo("sfixed64", "kSFixed64", "int64_t", "SFixed64")
+		return NewPrimitiveTypeNameInfo("sfixed64", "int64_t")
 	case descriptor.FieldDescriptorProto_TYPE_UINT32:
-		return NewPrimitiveTypeNameInfo("uint32", "kUInt32", "uint32_t", "UInt32")
+		return NewPrimitiveTypeNameInfo("uint32", "uint32_t")
 	case descriptor.FieldDescriptorProto_TYPE_INT32:
-		return NewPrimitiveTypeNameInfo("int32", "kInt32", "int32_t", "Int32")
+		return NewPrimitiveTypeNameInfo("int32", "int32_t")
 	case descriptor.FieldDescriptorProto_TYPE_SINT32:
-		return NewPrimitiveTypeNameInfo("sint32", "kSInt32", "int32_t", "SInt32")
+		return NewPrimitiveTypeNameInfo("sint32", "int32_t")
 	case descriptor.FieldDescriptorProto_TYPE_SINT64:
-		return NewPrimitiveTypeNameInfo("sint64", "kSInt64", "int64_t", "SInt64")
+		return NewPrimitiveTypeNameInfo("sint64", "int64_t")
 	case descriptor.FieldDescriptorProto_TYPE_FIXED32:
-		return NewPrimitiveTypeNameInfo("fixed32", "kFixed32", "uint32_t", "Fixed32")
+		return NewPrimitiveTypeNameInfo("fixed32", "uint32_t")
 	case descriptor.FieldDescriptorProto_TYPE_SFIXED32:
-		return NewPrimitiveTypeNameInfo("sfixed32", "kSFixed32", "int32_t", "SFixed32")
+		return NewPrimitiveTypeNameInfo("sfixed32", "int32_t")
 	case descriptor.FieldDescriptorProto_TYPE_DOUBLE:
-		return NewPrimitiveTypeNameInfo("double", "kDouble", "double", "Double")
+		return NewPrimitiveTypeNameInfo("double", "double")
 	case descriptor.FieldDescriptorProto_TYPE_FLOAT:
-		return NewPrimitiveTypeNameInfo("float", "kFloat", "float", "Float")
+		return NewPrimitiveTypeNameInfo("float", "float")
 	case descriptor.FieldDescriptorProto_TYPE_BOOL:
-		return NewPrimitiveTypeNameInfo("bool", "kBool", "bool", "Bool")
+		return NewPrimitiveTypeNameInfo("bool", "bool")
 	case descriptor.FieldDescriptorProto_TYPE_STRING:
 		return NewObjectTypeNameInfo("string", "kString", "std::string", "String")
 	case descriptor.FieldDescriptorProto_TYPE_MESSAGE:

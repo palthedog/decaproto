@@ -75,6 +75,7 @@ proto_library(
     srcs = [
         "def_order.proto",
         "nested.proto",
+        "numeric_types.proto",
         "repeated.proto",
         "simple.proto",
         "simple_proto2.proto",

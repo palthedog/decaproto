@@ -33,18 +33,18 @@ class Reflection final {
     std::map<uint32_t, GetterFn<cc_type>> get_##CcType##_impls_;
 
     // This is the expanded version of the above macro for reference.
-    // std::map<uint32_t, SetterFn<uint32_t>> set_UInt32_impls_;
+    // std::map<uint32_t, SetterFn<uint32_t>> set_Uint32_impls_;
 
-    DEFINE_FOR(uint64_t, UInt64)
+    DEFINE_FOR(uint64_t, Uint64)
     DEFINE_FOR(int64_t, Int64)
-    DEFINE_FOR(int64_t, SInt64)
+    DEFINE_FOR(int64_t, Sint64)
     DEFINE_FOR(uint64_t, Fixed64)
-    DEFINE_FOR(int64_t, SFixed64)
-    DEFINE_FOR(uint32_t, UInt32)
+    DEFINE_FOR(int64_t, Sfixed64)
+    DEFINE_FOR(uint32_t, Uint32)
     DEFINE_FOR(int32_t, Int32)
-    DEFINE_FOR(int32_t, SInt32)
+    DEFINE_FOR(int32_t, Sint32)
     DEFINE_FOR(uint32_t, Fixed32)
-    DEFINE_FOR(int32_t, SFixed32)
+    DEFINE_FOR(int32_t, Sfixed32)
     DEFINE_FOR(double, Double)
     DEFINE_FOR(float, Float)
     DEFINE_FOR(bool, Bool)
@@ -124,16 +124,16 @@ public:                                                                        \
         return it->second(message);                                            \
     }
 
-    DEFINE_FOR(uint64_t, UInt64)
+    DEFINE_FOR(uint64_t, Uint64)
     DEFINE_FOR(int64_t, Int64)
-    DEFINE_FOR(int64_t, SInt64)
+    DEFINE_FOR(int64_t, Sint64)
     DEFINE_FOR(uint64_t, Fixed64)
-    DEFINE_FOR(int64_t, SFixed64)
-    DEFINE_FOR(uint32_t, UInt32)
+    DEFINE_FOR(int64_t, Sfixed64)
+    DEFINE_FOR(uint32_t, Uint32)
     DEFINE_FOR(int32_t, Int32)
-    DEFINE_FOR(int32_t, SInt32)
+    DEFINE_FOR(int32_t, Sint32)
     DEFINE_FOR(uint32_t, Fixed32)
-    DEFINE_FOR(int32_t, SFixed32)
+    DEFINE_FOR(int32_t, Sfixed32)
     DEFINE_FOR(double, Double)
     DEFINE_FOR(float, Float)
     DEFINE_FOR(bool, Bool)
@@ -224,17 +224,17 @@ public:
 
     // Define Setter registerers
 
-    DEFINE_FOR(uint64_t, UInt64)
+    DEFINE_FOR(uint64_t, Uint64)
     DEFINE_FOR(int64_t, Int64)
-    DEFINE_FOR(int64_t, SInt64)
+    DEFINE_FOR(int64_t, Sint64)
     DEFINE_FOR(uint64_t, Fixed64)
-    DEFINE_FOR(int64_t, SFixed64)
+    DEFINE_FOR(int64_t, Sfixed64)
 
-    DEFINE_FOR(uint32_t, UInt32)
+    DEFINE_FOR(uint32_t, Uint32)
     DEFINE_FOR(int32_t, Int32)
-    DEFINE_FOR(int32_t, SInt32)
+    DEFINE_FOR(int32_t, Sint32)
     DEFINE_FOR(uint32_t, Fixed32)
-    DEFINE_FOR(int32_t, SFixed32)
+    DEFINE_FOR(int32_t, Sfixed32)
 
     DEFINE_FOR(double, Double)
     DEFINE_FOR(float, Float)

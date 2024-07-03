@@ -26,19 +26,19 @@ inline WireType GetWireType(FieldType type) {
     switch (type) {
         case kInt32:
         case kInt64:
-        case kUInt32:
-        case kUInt64:
-        case kSInt32:
-        case kSInt64:
+        case kUint32:
+        case kUint64:
+        case kSint32:
+        case kSint64:
         case kBool:
         case kEnum:
             return kVarint;
         case kFixed32:
-        case kSFixed32:
+        case kSfixed32:
         case kFloat:
             return kI32;
         case kFixed64:
-        case kSFixed64:
+        case kSfixed64:
         case kDouble:
             return kI64;
         case kString:

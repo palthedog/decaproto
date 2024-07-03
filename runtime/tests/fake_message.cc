@@ -14,7 +14,7 @@ const decaproto::Descriptor* FakeMessage::GetDescriptor() const {
     // Descriptor which represents this Message.
     kTestDescriptor = new Descriptor();
     kTestDescriptor->RegisterField(
-            FieldDescriptor(kNumTag, FieldType::kUInt32));
+            FieldDescriptor(kNumTag, FieldType::kUint32));
     kTestDescriptor->RegisterField(
             FieldDescriptor(kStrTag, FieldType::kString));
     kTestDescriptor->RegisterField(
@@ -22,7 +22,7 @@ const decaproto::Descriptor* FakeMessage::GetDescriptor() const {
     kTestDescriptor->RegisterField(
             FieldDescriptor(kEnumFieldTag, FieldType::kEnum));
     kTestDescriptor->RegisterField(
-            FieldDescriptor(kRepNumsTag, FieldType::kUInt32, true));
+            FieldDescriptor(kRepNumsTag, FieldType::kUint32, true));
     kTestDescriptor->RegisterField(
             FieldDescriptor(kRepEnumsTag, FieldType::kEnum, true));
     return kTestDescriptor;
@@ -37,8 +37,8 @@ const Reflection* FakeMessage::GetReflection() const {
     kTestReflection = new Reflection();
 
     // uint32 num = 1
-    kTestReflection->RegisterSetUInt32(kNumTag, MsgCast(&FakeMessage::set_num));
-    kTestReflection->RegisterGetUInt32(kNumTag, MsgCast(&FakeMessage::num));
+    kTestReflection->RegisterSetUint32(kNumTag, MsgCast(&FakeMessage::set_num));
+    kTestReflection->RegisterGetUint32(kNumTag, MsgCast(&FakeMessage::num));
 
     // string str = 2
     kTestReflection->RegisterMutableString(
@@ -58,11 +58,11 @@ const Reflection* FakeMessage::GetReflection() const {
             kEnumFieldTag, CastForGetEnumValue(&FakeMessage::enum_field));
 
     // repeated uint32 rep_nums = 5
-    kTestReflection->RegisterGetRepeatedUInt32(
+    kTestReflection->RegisterGetRepeatedUint32(
             kRepNumsTag, MsgCast(&FakeMessage::get_rep_nums));
-    // kTestReflection->RegisterSetRepeatedUInt32(
+    // kTestReflection->RegisterSetRepeatedUint32(
     // kRepNumsTag, MsgCast(&FakeMessage::set_rep_nums));
-    kTestReflection->RegisterAddRepeatedUInt32(
+    kTestReflection->RegisterAddRepeatedUint32(
             kRepNumsTag, MsgCast(&FakeMessage::add_rep_nums));
     kTestReflection->RegisterFieldSize(
             kRepNumsTag, MsgCast(&FakeMessage::rep_nums_size));
@@ -94,7 +94,7 @@ const decaproto::Descriptor* FakeOtherMessage::GetDescriptor() const {
     // Descriptor which represents this Message.
     kFakeOtherDescriptor = new Descriptor();
     kFakeOtherDescriptor->RegisterField(
-            FieldDescriptor(kOtherNumTag, FieldType::kUInt32));
+            FieldDescriptor(kOtherNumTag, FieldType::kUint32));
     return kFakeOtherDescriptor;
 }
 
@@ -107,9 +107,9 @@ const Reflection* FakeOtherMessage::GetReflection() const {
     kFakeOtherReflection = new Reflection();
 
     // uint32 num = 1
-    kFakeOtherReflection->RegisterSetUInt32(
+    kFakeOtherReflection->RegisterSetUint32(
             kOtherNumTag, MsgCast(&FakeOtherMessage::set_num));
-    kFakeOtherReflection->RegisterGetUInt32(
+    kFakeOtherReflection->RegisterGetUint32(
             kOtherNumTag, MsgCast(&FakeOtherMessage::num));
     return kFakeOtherReflection;
 }
