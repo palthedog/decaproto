@@ -34,11 +34,11 @@ inline WireType GetWireType(FieldType type) {
         case kEnum:
             return kVarint;
         case kFixed32:
-        case kSfixed32:
+        case kSFixed32:
         case kFloat:
             return kI32;
         case kFixed64:
-        case kSfixed64:
+        case kSFixed64:
         case kDouble:
             return kI64;
         case kString:

@@ -23,8 +23,8 @@ enum FieldType {
 
     kFixed32 = 9,
     kFixed64 = 10,
-    kSfixed32 = 11,
-    kSfixed64 = 12,
+    kSFixed32 = 11,
+    kSFixed64 = 12,
 
     kBool = 13,
     kString = 14,

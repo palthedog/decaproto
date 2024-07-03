@@ -321,7 +321,7 @@ TEST(StreamTest, WriteMultipleVarint64Test) {
     CodedOutputStream cos(new StlOutputStream(&ss));
     CodedInputStream cis(new StlInputStream(&ss));
 
-    uint64_t values[] = {1, 150, 100, 654321, 123456, UINT64_MAX};
+    uint64_t values[] = {0, 1, 150, 100, 654321, 123456, UINT64_MAX};
     for (auto value : values) {
         EXPECT_TRUE(cos.WriteVarint64(value));
     }
@@ -338,7 +338,7 @@ TEST(StreamTest, WriteMultipleVarint64_Minus_Test) {
     CodedOutputStream cos(new StlOutputStream(&ss));
     CodedInputStream cis(new StlInputStream(&ss));
 
-    int64_t values[] = {1, 150, -100, 654321, -123456, INT64_MIN, INT64_MAX};
+    int64_t values[] = {0, 1, 150, -100, 654321, -123456, INT64_MIN, INT64_MAX};
     for (auto value : values) {
         EXPECT_TRUE(cos.WriteVarint64(value));
     }
@@ -367,7 +367,7 @@ TEST(StreamTest, WriteMultipleVarint32Test) {
     CodedOutputStream cos(new StlOutputStream(&ss));
     CodedInputStream cis(new StlInputStream(&ss));
 
-    uint64_t values[] = {1, 150, 123456, 1000, 654321, UINT32_MAX};
+    uint64_t values[] = {0, 1, 150, 123456, 1000, 654321, UINT32_MAX};
     for (auto value : values) {
         EXPECT_TRUE(cos.WriteVarint64(value));
     }
@@ -375,6 +375,76 @@ TEST(StreamTest, WriteMultipleVarint32Test) {
     uint64_t result;
     for (auto value : values) {
         EXPECT_TRUE(cis.ReadVarint64(result));
+        EXPECT_EQ(value, result);
+    }
+}
+
+TEST(StreamTest, WriteOneSignedVarint32Test) {
+    stringstream ss;
+    CodedOutputStream cos(new StlOutputStream(&ss));
+    CodedInputStream cis(new StlInputStream(&ss));
+
+    EXPECT_TRUE(cos.WriteSignedVarint32(-123456));
+
+    int32_t result;
+    EXPECT_TRUE(cis.ReadSignedVarint32(result));
+    EXPECT_EQ(-123456, result);
+}
+
+TEST(StreamTest, WriteMultipleSignedVarint32Test) {
+    stringstream ss;
+    CodedOutputStream cos(new StlOutputStream(&ss));
+    CodedInputStream cis(new StlInputStream(&ss));
+
+    int32_t values[] = {
+            0, 1, 150, -200, 123456, 1000, 654321, INT32_MIN, INT32_MAX};
+    for (auto value : values) {
+        EXPECT_TRUE(cos.WriteSignedVarint32(value));
+    }
+
+    int32_t result;
+    for (auto value : values) {
+        EXPECT_TRUE(cis.ReadSignedVarint32(result));
+        EXPECT_EQ(value, result);
+    }
+}
+
+TEST(StreamTest, WriteOneSignedVarint64Test) {
+    stringstream ss;
+    CodedOutputStream cos(new StlOutputStream(&ss));
+    CodedInputStream cis(new StlInputStream(&ss));
+
+    EXPECT_TRUE(cos.WriteSignedVarint64(-123456));
+
+    int64_t result;
+    EXPECT_TRUE(cis.ReadSignedVarint64(result));
+    EXPECT_EQ(-123456, result);
+}
+
+TEST(StreamTest, WriteMultipleSignedVarint64Test) {
+    stringstream ss;
+    CodedOutputStream cos(new StlOutputStream(&ss));
+    CodedInputStream cis(new StlInputStream(&ss));
+
+    int64_t values[] = {
+            0,
+            1,
+            150,
+            -200,
+            123456,
+            1000,
+            654321,
+            INT32_MIN,
+            INT32_MAX,
+            INT64_MIN,
+            INT64_MAX};
+    for (auto value : values) {
+        EXPECT_TRUE(cos.WriteSignedVarint64(value));
+    }
+
+    int64_t result;
+    for (auto value : values) {
+        EXPECT_TRUE(cis.ReadSignedVarint64(result));
         EXPECT_EQ(value, result);
     }
 }

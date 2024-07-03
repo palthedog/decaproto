@@ -15,7 +15,6 @@ public:
     }
 
     virtual ~Message() {
-        std::cerr << "destracting Message" << std::endl;
     }
 
     virtual const Descriptor* GetDescriptor() const = 0;

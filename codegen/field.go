@@ -62,13 +62,21 @@ func getTypeNameInfoBase(f *descriptor.FieldDescriptorProto) TypeNameInfo {
 	case descriptor.FieldDescriptorProto_TYPE_INT64:
 		return NewPrimitiveTypeNameInfo("int64", "kInt64", "int64_t", "Int64")
 	case descriptor.FieldDescriptorProto_TYPE_FIXED64:
-		return NewPrimitiveTypeNameInfo("fixed64", "kFixed64", "uint64_t", "UInt64")
+		return NewPrimitiveTypeNameInfo("fixed64", "kFixed64", "uint64_t", "Fixed64")
+	case descriptor.FieldDescriptorProto_TYPE_SFIXED64:
+		return NewPrimitiveTypeNameInfo("sfixed64", "kSFixed64", "int64_t", "SFixed64")
 	case descriptor.FieldDescriptorProto_TYPE_UINT32:
 		return NewPrimitiveTypeNameInfo("uint32", "kUInt32", "uint32_t", "UInt32")
 	case descriptor.FieldDescriptorProto_TYPE_INT32:
 		return NewPrimitiveTypeNameInfo("int32", "kInt32", "int32_t", "Int32")
+	case descriptor.FieldDescriptorProto_TYPE_SINT32:
+		return NewPrimitiveTypeNameInfo("sint32", "kSInt32", "int32_t", "SInt32")
+	case descriptor.FieldDescriptorProto_TYPE_SINT64:
+		return NewPrimitiveTypeNameInfo("sint64", "kSInt64", "int64_t", "SInt64")
 	case descriptor.FieldDescriptorProto_TYPE_FIXED32:
-		return NewPrimitiveTypeNameInfo("fixed32", "kFixed32", "uint32_t", "UInt32")
+		return NewPrimitiveTypeNameInfo("fixed32", "kFixed32", "uint32_t", "Fixed32")
+	case descriptor.FieldDescriptorProto_TYPE_SFIXED32:
+		return NewPrimitiveTypeNameInfo("sfixed32", "kSFixed32", "int32_t", "SFixed32")
 	case descriptor.FieldDescriptorProto_TYPE_DOUBLE:
 		return NewPrimitiveTypeNameInfo("double", "kDouble", "double", "Double")
 	case descriptor.FieldDescriptorProto_TYPE_FLOAT:
@@ -118,9 +126,13 @@ func isPrimitiveType(f *descriptor.FieldDescriptorProto) bool {
 	case descriptor.FieldDescriptorProto_TYPE_UINT64,
 		descriptor.FieldDescriptorProto_TYPE_INT64,
 		descriptor.FieldDescriptorProto_TYPE_FIXED64,
+		descriptor.FieldDescriptorProto_TYPE_SFIXED64,
+		descriptor.FieldDescriptorProto_TYPE_SINT64,
 		descriptor.FieldDescriptorProto_TYPE_UINT32,
 		descriptor.FieldDescriptorProto_TYPE_INT32,
 		descriptor.FieldDescriptorProto_TYPE_FIXED32,
+		descriptor.FieldDescriptorProto_TYPE_SFIXED32,
+		descriptor.FieldDescriptorProto_TYPE_SINT32,
 		descriptor.FieldDescriptorProto_TYPE_DOUBLE,
 		descriptor.FieldDescriptorProto_TYPE_FLOAT,
 		descriptor.FieldDescriptorProto_TYPE_BOOL:
@@ -141,7 +153,7 @@ func processField(msg_printer *MessagePrinter, f *descriptor.FieldDescriptorProt
 			// string, message
 			addRepeatedObjectField(f, &type_name_info, msg_printer)
 		} else {
-			log.Fatal("Unsupported repeated field type", f.GetType(), f.GetName())
+			log.Fatal("Unsupported repeated field type: ", f.GetType(), f.GetName())
 		}
 	} else if f.GetLabel() == descriptor.FieldDescriptorProto_LABEL_OPTIONAL {
 		// optional
@@ -155,7 +167,7 @@ func processField(msg_printer *MessagePrinter, f *descriptor.FieldDescriptorProt
 			// message
 			addMessageField(f, &type_name_info, msg_printer)
 		} else {
-			log.Fatal("Unsupported field type", f.GetType(), f.GetName())
+			log.Fatal("Unsupported field type ", f.GetType(), f.GetName())
 		}
 	} else {
 		log.Fatal("Unsupported field label", f.GetLabel(), f.GetName())

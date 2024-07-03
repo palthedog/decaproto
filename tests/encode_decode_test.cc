@@ -5,6 +5,7 @@
 #include "decaproto/decoder.h"
 #include "decaproto/encoder.h"
 #include "decaproto/stream/stl.h"
+#include "tests/numeric_types.pb.h"
 #include "tests/repeated.pb.h"
 #include "tests/simple.pb.h"
 
@@ -107,4 +108,46 @@ TEST(EncodeDecodeTest, RepeatedMessageTest) {
                 src.other_messages()[i].other_num(),
                 dst.other_messages()[i].other_num());
     }
+}
+
+TEST(EncodeDecodeTest, NumericTypesTest) {
+    stringstream ss;
+    StlInputStream iss(&ss);
+    StlOutputStream oss(&ss);
+
+    NumericTypes src;
+    src.set_int32_value(123);
+    src.set_int64_value(1234567890);
+    src.set_uint32_value(456);
+    src.set_uint64_value(9876543210);
+    src.set_sint32_value(-123);
+    src.set_sint64_value(-1234567890);
+    src.set_fixed32_value(123);
+    src.set_fixed64_value(1234567890);
+    src.set_sfixed32_value(-123);
+    src.set_sfixed64_value(-1234567890);
+    src.set_float_value(3.14);
+    src.set_double_value(2.71828);
+
+    size_t size;
+    // Encode the message to the stream.
+    EXPECT_TRUE(EncodeMessage(oss, src, size));
+
+    // Decode the message from the stream.
+    NumericTypes dst;
+    EXPECT_TRUE(DecodeMessage(iss, &dst));
+
+    // Let's compare the fields of the source and destination messages.
+    EXPECT_EQ(src.int32_value(), dst.int32_value());
+    EXPECT_EQ(src.int64_value(), dst.int64_value());
+    EXPECT_EQ(src.uint32_value(), dst.uint32_value());
+    EXPECT_EQ(src.uint64_value(), dst.uint64_value());
+    EXPECT_EQ(src.sint32_value(), dst.sint32_value());
+    EXPECT_EQ(src.sint64_value(), dst.sint64_value());
+    EXPECT_EQ(src.fixed32_value(), dst.fixed32_value());
+    EXPECT_EQ(src.fixed64_value(), dst.fixed64_value());
+    EXPECT_EQ(src.sfixed32_value(), dst.sfixed32_value());
+    EXPECT_EQ(src.sfixed64_value(), dst.sfixed64_value());
+    EXPECT_NEAR(src.float_value(), dst.float_value(), EPSILON);
+    EXPECT_NEAR(src.double_value(), dst.double_value(), EPSILON);
 }

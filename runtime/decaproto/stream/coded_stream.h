@@ -99,27 +99,31 @@ public:
     }
 
     bool ReadSignedVarint64(int64_t& result) {
-        uint64_t uint64_result;
-        if (!ReadVarint64(uint64_result)) {
+        uint64_t uresult;
+        if (!ReadVarint64(uresult)) {
             return false;
         }
-        result = DecodeZigZag(uint64_result);
+        result = DecodeZigZag64(uresult);
         return true;
     }
 
     bool ReadSignedVarint32(int32_t& result) {
-        int64_t result64;
-        if (!ReadSignedVarint64(result64)) {
+        uint32_t uresult;
+        if (!ReadVarint32(uresult)) {
             return false;
         }
-        result = static_cast<int32_t>(result64);
-        return result64 >= INT32_MIN && result64 <= INT32_MAX;
+        result = DecodeZigZag32(uresult);
+        return true;
     }
 
     bool ReadFixedInt32(uint32_t& result);
     bool ReadFixedInt64(uint64_t& result);
 
-    static int64_t DecodeZigZag(uint64_t value) {
+    static int64_t DecodeZigZag64(uint64_t value) {
+        return (value >> 1) ^ -(value & 1);
+    }
+
+    static int32_t DecodeZigZag32(uint32_t value) {
         return (value >> 1) ^ -(value & 1);
     }
 
@@ -167,8 +171,12 @@ public:
     bool WriteFixedInt32(uint32_t value);
     bool WriteFixedInt64(uint64_t value);
 
-    static uint64_t EncodeZigZag(uint64_t value) {
-        return (value << 1) | (value >> 63);
+    static uint64_t EncodeZigZag(int64_t value) {
+        return (value << 1) ^ (value >> 63);
+    }
+
+    static uint32_t EncodeZigZag32(int32_t value) {
+        return (value << 1) ^ (value >> 31);
     }
 
 private:
