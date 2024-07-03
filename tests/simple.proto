@@ -9,6 +9,9 @@ message SimpleMessage {
   string str = 2;
   SimpleEnum enum_value = 3;
   OtherMessage other = 4;
+  float float_value = 5;
+  double double_value = 6;
+  bool bool_value = 7;
 }
 
 enum SimpleEnum {

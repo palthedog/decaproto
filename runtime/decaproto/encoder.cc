@@ -9,9 +9,23 @@
 #include "decaproto/reflection.h"
 #include "decaproto/stream/coded_stream.h"
 
+using namespace std;
+
 namespace decaproto {
 
-using namespace std;
+namespace {
+
+template <typename SRC_T, typename DST_T>
+DST_T MemcpyCast(SRC_T src) {
+    return *(DST_T*)(&src);
+}
+
+template <bool, typename DST_T>
+DST_T MemcpyCast(bool src) {
+    return src ? 1 : 0;
+}
+
+}  // namespace
 
 bool EncodeMessage(
         CodedOutputStream& stream,
@@ -36,6 +50,7 @@ size_t ComputeEncodedFieldSize(
 
     uint32_t tag = field_desc.GetFieldNumber();
     switch (field_desc.GetType()) {
+        case FieldType::kSInt32:
         case FieldType::kInt32:
             if (field_desc.IsRepeated()) {
                 for (int32_t value :
@@ -51,6 +66,7 @@ size_t ComputeEncodedFieldSize(
                 }
             }
             break;
+        case FieldType::kBool:
         case FieldType::kUInt32:
             if (field_desc.IsRepeated()) {
                 for (uint32_t value :
@@ -66,6 +82,7 @@ size_t ComputeEncodedFieldSize(
                 }
             }
             break;
+        case FieldType::kSInt64:
         case FieldType::kInt64:
             if (field_desc.IsRepeated()) {
                 for (int64_t value :
@@ -150,11 +167,8 @@ size_t ComputeEncodedFieldSize(
                     size += sub_msg_size;
                 }
             } else {
-                cerr << "kMessage" << endl;
                 const Message& value = reflection->GetMessage(&message, tag);
-                cerr << "got value" << endl;
                 size_t sub_msg_size = ComputeEncodedSize(value);
-                cerr << "computed size of other: " << sub_msg_size << endl;
                 if (sub_msg_size > 0) {
                     // Encode only if the sub message is non-default value
                     // tag
@@ -166,17 +180,70 @@ size_t ComputeEncodedFieldSize(
                 }
             }
             break;
-        case kDouble:
-        case kFloat:
-        case kSInt32:
-        case kSInt64:
-        case kFixed32:
-        case kFixed64:
-        case kSfixed32:
-        case kSfixed64:
-        case kBool:
-        case kBytes:
-        case kGroup:
+        case FieldType::kDouble: {
+            size_t field_count = 1;
+            if (field_desc.IsRepeated()) {
+                field_count = reflection->GetRepeatedRef<double>(&message, tag)
+                                      .size();
+            }
+            // tag (1) + double size (8)
+            size += (1 + 8) * field_count;
+            break;
+        }
+        case FieldType::kFloat: {
+            size_t field_count = 1;
+            if (field_desc.IsRepeated()) {
+                field_count =
+                        reflection->GetRepeatedRef<float>(&message, tag).size();
+            }
+            // tag (1) + float size (4)
+            size += (1 + 4) * field_count;
+            break;
+        }
+        case FieldType::kFixed32: {
+            size_t field_count = 1;
+            if (field_desc.IsRepeated()) {
+                field_count =
+                        reflection->GetRepeatedRef<uint32_t>(&message, tag)
+                                .size();
+            }
+            // tag (1) + int32 size (4)
+            size += (1 + 4) * field_count;
+            break;
+        }
+        case FieldType::kSfixed32: {
+            size_t field_count = 1;
+            if (field_desc.IsRepeated()) {
+                field_count = reflection->GetRepeatedRef<int32_t>(&message, tag)
+                                      .size();
+            }
+            // tag (1) + int32 size (4)
+            size += (1 + 4) * field_count;
+            break;
+        }
+        case FieldType::kFixed64: {
+            size_t field_count = 1;
+            if (field_desc.IsRepeated()) {
+                field_count =
+                        reflection->GetRepeatedRef<uint64_t>(&message, tag)
+                                .size();
+            }
+            // tag (1) + int32 size (8)
+            size += (1 + 8) * field_count;
+            break;
+        }
+        case FieldType::kSfixed64: {
+            size_t field_count = 1;
+            if (field_desc.IsRepeated()) {
+                field_count = reflection->GetRepeatedRef<int64_t>(&message, tag)
+                                      .size();
+            }
+            // tag (1) + int32 size (8)
+            size += (1 + 8) * field_count;
+            break;
+        }
+        case FieldType::kBytes:
+        case FieldType::kGroup:
             cerr << "TODO: Implement FieldType: " << field_desc.GetType()
                  << endl;
             break;
@@ -213,6 +280,36 @@ bool EncodeTag(CodedOutputStream& stream, const FieldDescriptor& field_desc) {
     return stream.WriteVarint32(tag);
 }
 
+template <typename T, typename EncT>
+bool EncodeFieldImpl(
+        CodedOutputStream& stream,
+        const Message& message,
+        const Reflection* reflection,
+        const FieldDescriptor& field_desc,
+        T (Reflection::*p_get)(const Message*, uint32_t) const,
+        bool (CodedOutputStream::*p_write)(EncT)) {
+    uint32_t tag = field_desc.GetFieldNumber();
+    if (field_desc.IsRepeated()) {
+        // Treat enum values as int since we don't know the enum type
+        // here
+        for (T value : reflection->GetRepeatedRef<T>(&message, tag)) {
+            if (!EncodeTag(stream, field_desc) ||
+                !(stream.*p_write)(MemcpyCast<T, EncT>(value))) {
+                return false;
+            }
+        }
+    } else {
+        T value = (reflection->*p_get)(&message, tag);
+        if (value != T()) {
+            if (!EncodeTag(stream, field_desc) ||
+                !(stream.*p_write)(MemcpyCast<T, EncT>(value))) {
+                return false;
+            }
+        }
+    }
+    return true;
+}
+
 bool EncodeField(
         CodedOutputStream& stream,
         const Message& message,
@@ -221,82 +318,39 @@ bool EncodeField(
     uint32_t tag = field_desc.GetFieldNumber();
     switch (field_desc.GetType()) {
         case FieldType::kInt32:
-            if (field_desc.IsRepeated()) {
-                for (int32_t value :
-                     reflection->GetRepeatedRef<int32_t>(&message, tag)) {
-                    if (!EncodeTag(stream, field_desc) |
-                        !stream.WriteVarint32(value)) {
-                        return false;
-                    }
-                }
-            } else {
-                int32_t value = reflection->GetInt32(&message, tag);
-                if (value != 0) {
-                    if (!EncodeTag(stream, field_desc) ||
-                        !stream.WriteVarint32(value)) {
-                        return false;
-                    }
-                }
-            }
-            break;
-
+            return EncodeFieldImpl<int32_t, uint32_t>(
+                    stream,
+                    message,
+                    reflection,
+                    field_desc,
+                    &Reflection::GetInt32,
+                    &CodedOutputStream::WriteVarint32);
         case FieldType::kUInt32:
-            if (field_desc.IsRepeated()) {
-                for (uint32_t value :
-                     reflection->GetRepeatedRef<uint32_t>(&message, tag)) {
-                    if (!EncodeTag(stream, field_desc) ||
-                        !stream.WriteVarint32(value)) {
-                        return false;
-                    }
-                }
-            } else {
-                uint32_t value = reflection->GetUInt32(&message, tag);
-                if (value != 0) {
-                    if (!EncodeTag(stream, field_desc) ||
-                        !stream.WriteVarint32(value)) {
-                        return false;
-                    }
-                }
-            }
+            return EncodeFieldImpl<uint32_t, uint32_t>(
+                    stream,
+                    message,
+                    reflection,
+                    field_desc,
+                    &Reflection::GetUInt32,
+                    &CodedOutputStream::WriteVarint32);
             break;
         case FieldType::kInt64:
-            if (field_desc.IsRepeated()) {
-                for (int64_t value :
-                     reflection->GetRepeatedRef<int64_t>(&message, tag)) {
-                    if (!EncodeTag(stream, field_desc) ||
-                        !stream.WriteVarint64(value)) {
-                        return false;
-                    }
-                }
-            } else {
-                int64_t value = reflection->GetInt64(&message, tag);
-                if (value != 0) {
-                    if (!EncodeTag(stream, field_desc) ||
-                        !stream.WriteVarint64(value)) {
-                        return false;
-                    }
-                }
-            }
-            break;
+            return EncodeFieldImpl<int64_t, uint64_t>(
+                    stream,
+                    message,
+                    reflection,
+                    field_desc,
+                    &Reflection::GetInt64,
+                    &CodedOutputStream::WriteVarint64);
+
         case FieldType::kUInt64:
-            if (field_desc.IsRepeated()) {
-                for (uint64_t value :
-                     reflection->GetRepeatedRef<uint64_t>(&message, tag)) {
-                    if (!EncodeTag(stream, field_desc) ||
-                        !stream.WriteVarint64(value)) {
-                        return false;
-                    }
-                }
-            } else {
-                uint64_t value = reflection->GetUInt64(&message, tag);
-                if (value != 0) {
-                    if (!EncodeTag(stream, field_desc) ||
-                        !stream.WriteVarint64(value)) {
-                        return false;
-                    }
-                }
-            }
-            break;
+            return EncodeFieldImpl<uint64_t, uint64_t>(
+                    stream,
+                    message,
+                    reflection,
+                    field_desc,
+                    &Reflection::GetUInt64,
+                    &CodedOutputStream::WriteVarint64);
         case FieldType::kString:
             if (field_desc.IsRepeated()) {
                 for (const string& value :
@@ -327,26 +381,15 @@ bool EncodeField(
             }
             break;
         case FieldType::kEnum:
-            if (field_desc.IsRepeated()) {
-                // Treat enum values as int since we don't know the enum type
-                // here
-                for (int value :
-                     reflection->GetRepeatedRef<int>(&message, tag)) {
-                    if (!EncodeTag(stream, field_desc) ||
-                        !stream.WriteVarint32(value)) {
-                        return false;
-                    }
-                }
-            } else {
-                int value = reflection->GetEnumValue(&message, tag);
-                if (value != 0) {
-                    if (!EncodeTag(stream, field_desc) ||
-                        !stream.WriteVarint32(value)) {
-                        return false;
-                    }
-                }
-            }
-            break;
+            // Treat enum values as int since we don't know the enum type
+            // here
+            return EncodeFieldImpl<int, uint64_t>(
+                    stream,
+                    message,
+                    reflection,
+                    field_desc,
+                    &Reflection::GetEnumValue,
+                    &CodedOutputStream::WriteVarint64);
         case FieldType::kMessage:
             if (field_desc.IsRepeated()) {
                 for (const Message& value :
@@ -386,24 +429,87 @@ bool EncodeField(
             }
             break;
         case kDouble:
+            return EncodeFieldImpl<double, uint64_t>(
+                    stream,
+                    message,
+                    reflection,
+                    field_desc,
+                    &Reflection::GetDouble,
+                    &CodedOutputStream::WriteFixedInt64);
         case kFloat:
+            return EncodeFieldImpl<float, uint32_t>(
+                    stream,
+                    message,
+                    reflection,
+                    field_desc,
+                    &Reflection::GetFloat,
+                    &CodedOutputStream::WriteFixedInt32);
         case kSInt32:
+            return EncodeFieldImpl<int32_t, int32_t>(
+                    stream,
+                    message,
+                    reflection,
+                    field_desc,
+                    &Reflection::GetInt32,
+                    &CodedOutputStream::WriteSignedVarint32);
         case kSInt64:
+            return EncodeFieldImpl<int64_t, int64_t>(
+                    stream,
+                    message,
+                    reflection,
+                    field_desc,
+                    &Reflection::GetInt64,
+                    &CodedOutputStream::WriteSignedVarint64);
         case kFixed32:
+            return EncodeFieldImpl<uint32_t, uint32_t>(
+                    stream,
+                    message,
+                    reflection,
+                    field_desc,
+                    &Reflection::GetUInt32,
+                    &CodedOutputStream::WriteFixedInt32);
         case kFixed64:
+            return EncodeFieldImpl<uint64_t, uint64_t>(
+                    stream,
+                    message,
+                    reflection,
+                    field_desc,
+                    &Reflection::GetUInt64,
+                    &CodedOutputStream::WriteFixedInt64);
         case kSfixed32:
+            return EncodeFieldImpl<int32_t, uint32_t>(
+                    stream,
+                    message,
+                    reflection,
+                    field_desc,
+                    &Reflection::GetInt32,
+                    &CodedOutputStream::WriteFixedInt32);
         case kSfixed64:
+            return EncodeFieldImpl<int64_t, uint64_t>(
+                    stream,
+                    message,
+                    reflection,
+                    field_desc,
+                    &Reflection::GetInt64,
+                    &CodedOutputStream::WriteFixedInt64);
         case kBool:
+            return EncodeFieldImpl<bool, uint32_t>(
+                    stream,
+                    message,
+                    reflection,
+                    field_desc,
+                    &Reflection::GetBool,
+                    &CodedOutputStream::WriteVarint32);
         case kBytes:
         case kGroup:
-            cerr << "TODO: Implement FieldType: " << field_desc.GetType()
-                 << endl;
-            break;
+            cerr << "TODO: Implement encoder for FieldType: "
+                 << field_desc.GetType() << endl;
+            return false;
         case kUnknown:
             cerr << "Unknown field type specified which should never be happen "
                     "though"
                  << endl;
-            break;
+            return false;
     }
     return true;
 }

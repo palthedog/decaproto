@@ -43,6 +43,21 @@ using namespace std;
 
 namespace decaproto {
 
+namespace {
+
+template <typename SRC_T, typename DST_T>
+DST_T MemcpyCast(SRC_T src) {
+    return *(DST_T*)(&src);
+}
+
+template <typename SRC_T, bool>
+bool MemcpyCast(SRC_T src) {
+    // bool is encoded as either 0 or 1.
+    return src == 0 ? false : 1;
+}
+
+}  // namespace
+
 bool DecodeMessage(
         CodedInputStream& cis,
         size_t size,
@@ -79,6 +94,13 @@ bool SkipUnknownField(CodedInputStream& cis, WireType wire_type) {
             }
             break;
         }
+        case kI32: {
+            uint32_t value;
+            if (!cis.ReadFixedInt32(value)) {
+                return false;
+            }
+            break;
+        }
         case kLen: {
             uint32_t len;
             if (!cis.ReadVarint32(len)) {
@@ -89,7 +111,6 @@ bool SkipUnknownField(CodedInputStream& cis, WireType wire_type) {
         }
         case kDeprecated_SGroup:
         case kDeprecated_EGroup:
-        case kI32:
             return false;
     }
     return true;
@@ -150,16 +171,23 @@ bool DecodeVarint(
             }
             return true;
         case kSInt32:
-            // not supported yet
-            // reflection->SetSInt32(message, tag,
-            // CodedInputStream::DecodeZigzag(value));
-            std::cerr << "SetSInt32 is not implemented yet" << std::endl;
-            return false;
+            if (field->IsRepeated()) {
+                reflection->AddInt32(
+                        message, tag, CodedInputStream::DecodeZigZag(value));
+            } else {
+                reflection->SetInt32(
+                        message, tag, CodedInputStream::DecodeZigZag(value));
+            }
+            return true;
         case kSInt64:
-            // not supported yet
-            // reflection->SetSInt64(message, tag, value);
-            std::cerr << "SetSInt64 is not implemented yet" << std::endl;
-            return false;
+            if (field->IsRepeated()) {
+                reflection->AddInt64(
+                        message, tag, CodedInputStream::DecodeZigZag(value));
+            } else {
+                reflection->SetInt64(
+                        message, tag, CodedInputStream::DecodeZigZag(value));
+            }
+            return true;
         default:
             // This field is not a varint field.
             std::cerr << "This field is not a varint field. tag: "
@@ -167,6 +195,105 @@ bool DecodeVarint(
             return false;
     }
     return true;
+}
+
+bool DecodeFixedInt32(
+        CodedInputStream& cis,
+        Message* message,
+        const Reflection* reflection,
+        const FieldDescriptor* field) {
+    // i32        := sfixed32 | fixed32 | float;
+    //                 encoded as 4-byte little-endian;
+    //                 memcpy of the equivalent C types (u?int32_t, float)
+    uint32_t value;
+    if (!cis.ReadFixedInt32(value)) {
+        return false;
+    }
+    switch (field->GetType()) {
+        case kFixed32:
+            if (field->IsRepeated()) {
+                reflection->AddUInt32(message, field->GetFieldNumber(), value);
+            } else {
+                reflection->SetUInt32(message, field->GetFieldNumber(), value);
+            }
+            return true;
+        case kSfixed32:
+            if (field->IsRepeated()) {
+                reflection->AddInt32(message, field->GetFieldNumber(), value);
+            } else {
+                reflection->SetInt32(message, field->GetFieldNumber(), value);
+            }
+            return true;
+        case kFloat:
+            if (field->IsRepeated()) {
+                reflection->AddFloat(
+                        message,
+                        field->GetFieldNumber(),
+                        MemcpyCast<uint32_t, float>(value));
+            } else {
+                reflection->SetFloat(
+                        message,
+                        field->GetFieldNumber(),
+                        MemcpyCast<uint32_t, float>(value));
+            }
+            return true;
+        default:
+            cerr << "This field is not a fixed int32 field. tag: "
+                 << field->GetFieldNumber() << endl;
+            return false;
+    }
+    return true;
+}
+
+bool DecodeFixedInt64(
+        CodedInputStream& cis,
+        Message* message,
+        const Reflection* reflection,
+        const FieldDescriptor* field) {
+    // i64        := sfixed64 | fixed64 | double;
+    //                 encoded as 8-byte little-endian;
+    //                 memcpy of the equivalent C types (u?int64_t, double)
+    //
+    uint64_t value;
+    if (!cis.ReadFixedInt64(value)) {
+        std::cerr << "Failed to read fixed64. field number: "
+                  << field->GetFieldNumber() << endl;
+        return false;
+    }
+    switch (field->GetType()) {
+        case kFixed64:
+            if (field->IsRepeated()) {
+                reflection->AddUInt64(message, field->GetFieldNumber(), value);
+            } else {
+                reflection->SetUInt64(message, field->GetFieldNumber(), value);
+            }
+            return true;
+        case kSfixed64:
+            if (field->IsRepeated()) {
+                reflection->AddInt64(message, field->GetFieldNumber(), value);
+            } else {
+                reflection->SetInt64(message, field->GetFieldNumber(), value);
+            }
+            return true;
+        case kDouble:
+            if (field->IsRepeated()) {
+                reflection->AddDouble(
+                        message,
+                        field->GetFieldNumber(),
+                        MemcpyCast<uint64_t, double>(value));
+            } else {
+                reflection->SetDouble(
+                        message,
+                        field->GetFieldNumber(),
+                        MemcpyCast<uint64_t, double>(value));
+            }
+            return true;
+        default:
+            cerr << "This field is not a fixed int64 field. tag: "
+                 << field->GetFieldNumber() << endl;
+            return false;
+    }
+    return false;
 }
 
 bool DecodeLenPrefix(
@@ -276,15 +403,30 @@ bool DecodeMessage(
         switch (wire_type) {
             case kVarint:
                 if (!DecodeVarint(cis, message, reflection, field)) {
+                    std::cerr << "Failed to decode varint. field number: "
+                              << field->GetFieldNumber() << endl;
                     return false;
                 }
                 break;
             case kI64:
+                if (!DecodeFixedInt64(cis, message, reflection, field)) {
+                    std::cerr << "Failed to decode fixed64. field number: "
+                              << field->GetFieldNumber() << endl;
+                    return false;
+                }
+                break;
             case kI32:
-                std::cerr << "fixed int is not supported yet." << endl;
-                return false;
+                if (!DecodeFixedInt32(cis, message, reflection, field)) {
+                    std::cerr << "Failed to decode fixed32. field number: "
+                              << field->GetFieldNumber() << endl;
+
+                    return false;
+                }
+                break;
             case kLen:
                 if (!DecodeLenPrefix(cis, message, reflection, field)) {
+                    std::cerr << "Failed to decode len-prefix. field number: "
+                              << field->GetFieldNumber() << endl;
                     return false;
                 }
                 break;

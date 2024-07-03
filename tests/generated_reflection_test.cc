@@ -23,6 +23,9 @@ const uint32_t kNumTag = 1;
 const uint32_t kStrTag = 2;
 const uint32_t kEnumValueTag = 3;
 const uint32_t kOtherTag = 4;
+const uint32_t kFloatValueTag = 5;
+const uint32_t kDoubleValueTag = 6;
+const uint32_t kBoolValueTag = 7;
 
 // OtherMessage(simple.proto) fields
 const uint32_t kOtherNumTag = 1;
@@ -39,7 +42,7 @@ TEST(ReflectionTest, DescriptorTest) {
 
     const Descriptor* descriptor = m.GetDescriptor();
 
-    EXPECT_EQ(4, descriptor->GetFields().size());
+    EXPECT_EQ(7, descriptor->GetFields().size());
 
     EXPECT_EQ(
             FieldType::kInt32,
@@ -53,6 +56,15 @@ TEST(ReflectionTest, DescriptorTest) {
     EXPECT_EQ(
             FieldType::kMessage,
             FindFieldDescriptor(descriptor, kOtherTag).GetType());
+    EXPECT_EQ(
+            FieldType::kFloat,
+            FindFieldDescriptor(descriptor, kFloatValueTag).GetType());
+    EXPECT_EQ(
+            FieldType::kDouble,
+            FindFieldDescriptor(descriptor, kDoubleValueTag).GetType());
+    EXPECT_EQ(
+            FieldType::kBool,
+            FindFieldDescriptor(descriptor, kBoolValueTag).GetType());
 }
 
 TEST(ReflectionTest, AccessNumTest) {

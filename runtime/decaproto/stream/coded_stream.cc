@@ -76,7 +76,7 @@ bool CodedOutputStream::WriteFixedInt32(uint32_t value) {
 }
 
 bool CodedOutputStream::WriteFixedInt64(uint64_t value) {
-    for (int i = 0; i < 4; i++) {
+    for (int i = 0; i < 8; i++) {
         uint8_t b = value & 0xff;
         value = value >> 8;
         if (!output_.Write(b)) {
