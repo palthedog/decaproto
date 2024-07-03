@@ -59,7 +59,7 @@ public:
     }
 
     void clear() {
-        ptr_.clear();
+        ptr_.reset();
     }
 
     T* operator->() {
