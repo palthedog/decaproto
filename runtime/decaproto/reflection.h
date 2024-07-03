@@ -14,6 +14,28 @@ namespace decaproto {
 
 class Message;
 
+// Reflection class provides ways to access to fields of a message without
+// knowing the concrete type of the message.
+//
+// Library users don't need to use this class for most cases.
+// However, it's useful if you want to develop a utility library working with
+// deca proto (e.g. serialization library).
+//
+// For example, we have a Message with a uint32 field with tag 1.
+// message SampleProto {
+//   uint32 num = 1;
+// }
+//
+// We noramally access the field like this:
+//   SampleProto sample;
+//   sample.set_num(10);
+//   std::cout << sample.num() << std::endl;
+// But with Reflection, we can access the field like this:
+//   Message* sample;  // don't know the concrete type here
+//   Reflection* reflection = sample->GetReflection();
+//   const int kFieldNumber = 1;
+//   reflection->SetUint32(sample, kFieldNumber, 10);
+//   std::cout << reflection->GetUint32(sample, kFieldNumber) << std::endl;
 class Reflection final {
     template <typename T>
     using SetterFn = std::function<void(Message*, T)>;
