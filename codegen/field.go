@@ -100,6 +100,14 @@ func getTypeNameInfoBase(f *descriptor.FieldDescriptorProto) TypeNameInfo {
 	return TypeNameInfo{}
 }
 
+func getFullTypeName(f *descriptor.FieldDescriptorProto) string {
+	proto_name := f.GetTypeName()
+	if proto_name[0] == '.' {
+		proto_name = proto_name[1:]
+	}
+	return strings.Join(strings.Split(proto_name, "."), "_")
+}
+
 func getTypeNameInfo(f *descriptor.FieldDescriptorProto) TypeNameInfo {
 	info := getTypeNameInfoBase(f)
 	if f.GetType() == descriptor.FieldDescriptorProto_TYPE_MESSAGE {
@@ -107,7 +115,7 @@ func getTypeNameInfo(f *descriptor.FieldDescriptorProto) TypeNameInfo {
 		// .OuterMessage.NestedMessage
 		proto_type_name := f.GetTypeName()
 		// ::OuterMessage::NestedMessage
-		cc_type := strings.Join(strings.Split(proto_type_name, "."), "::")
+		cc_type := getFullTypeName(f)
 		// Access Message objects via const reference
 		info.proto_name = proto_type_name
 		info.cc_type = cc_type
@@ -116,7 +124,7 @@ func getTypeNameInfo(f *descriptor.FieldDescriptorProto) TypeNameInfo {
 		// .OuterMessage.NestedEnum
 		proto_type_name := f.GetTypeName()
 		// ::OuterMessage::NestedEnum
-		cc_type := strings.Join(strings.Split(proto_type_name, "."), "::")
+		cc_type := getFullTypeName(f)
 		// Enum is copyable
 		info.proto_name = proto_type_name
 		info.cc_type = cc_type

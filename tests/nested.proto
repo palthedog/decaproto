@@ -8,10 +8,18 @@ message OuterMessage {
   }
 
   message NestedMessage {
-    int32 num = 1;
+
+    message GrandChildMessage {
+      double double_value0 = 1;
+      double double_value1 = 2;
+    }
+
+    uint32 num = 1;
+
+    GrandChildMessage grand_child_message = 2;
   }
 
-  int32 num = 1;
+  uint32 num = 1;
   NestedMessage nested_message = 2;
   NestedEnumMessage nested_enum_message = 3;
 }

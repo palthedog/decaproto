@@ -157,7 +157,7 @@ func NewDescriptorPrinter() *DescriptorPrinter {
 
 type MessagePrinter struct {
 	short_name string // MyMessage
-	full_name  string // ::MyPackage::Nested::MyMessage
+	full_name  string // MyPackage_Nested_MyMessage
 
 	privates string
 	publics  string

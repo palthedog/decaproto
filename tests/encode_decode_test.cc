@@ -5,6 +5,7 @@
 #include "decaproto/decoder.h"
 #include "decaproto/encoder.h"
 #include "decaproto/stream/stl.h"
+#include "tests/nested.pb.h"
 #include "tests/numeric_types.pb.h"
 #include "tests/repeated.pb.h"
 #include "tests/simple.pb.h"
@@ -232,4 +233,42 @@ TEST(EncodeDecodeTest, RepeatedNumericTypesTest) {
     testRepeatedField(src.sfixed64_values(), dst.sfixed64_values());
     testRepeatedField(src.float_values(), dst.float_values());
     testRepeatedField(src.double_values(), dst.double_values());
+}
+
+TEST(EncodeDecodeTest, NestedMessageTest) {
+    stringstream ss;
+    StlInputStream iss(&ss);
+    StlOutputStream oss(&ss);
+
+    OuterMessage src;
+    src.set_num(100);
+    src.set_nested_enum_message(OuterMessage::NestedEnumMessage::N_ENUM_A);
+    src.mutable_nested_message()->set_num(200);
+    src.mutable_nested_message()
+            ->mutable_grand_child_message()
+            ->set_double_value0(0.1);
+    src.mutable_nested_message()
+            ->mutable_grand_child_message()
+            ->set_double_value1(0.2);
+
+    size_t size;
+    // Encode the message to the stream.
+    EXPECT_TRUE(EncodeMessage(oss, src, size));
+
+    // Decode the message from the stream.
+    OuterMessage dst;
+    EXPECT_TRUE(DecodeMessage(iss, &dst));
+
+    // Let's compare the fields of the source and destination messages.
+    EXPECT_EQ(src.num(), dst.num());
+    EXPECT_EQ(src.nested_enum_message(), dst.nested_enum_message());
+    EXPECT_EQ(src.nested_message().num(), dst.nested_message().num());
+    EXPECT_NEAR(
+            src.nested_message().grand_child_message().double_value0(),
+            dst.nested_message().grand_child_message().double_value0(),
+            EPSILON);
+    EXPECT_NEAR(
+            src.nested_message().grand_child_message().double_value1(),
+            dst.nested_message().grand_child_message().double_value1(),
+            EPSILON);
 }
