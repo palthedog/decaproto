@@ -244,12 +244,7 @@ TEST(EncodeDecodeTest, NestedMessageTest) {
     src.set_num(100);
     src.set_nested_enum_message(OuterMessage::NestedEnumMessage::N_ENUM_A);
     src.mutable_nested_message()->set_num(200);
-    src.mutable_nested_message()
-            ->mutable_grand_child_message()
-            ->set_double_value0(0.1);
-    src.mutable_nested_message()
-            ->mutable_grand_child_message()
-            ->set_double_value1(0.2);
+    src.mutable_nested_message()->mutable_grand_child_message()->set_num(10);
 
     size_t size;
     // Encode the message to the stream.
@@ -264,11 +259,122 @@ TEST(EncodeDecodeTest, NestedMessageTest) {
     EXPECT_EQ(src.nested_enum_message(), dst.nested_enum_message());
     EXPECT_EQ(src.nested_message().num(), dst.nested_message().num());
     EXPECT_NEAR(
-            src.nested_message().grand_child_message().double_value0(),
-            dst.nested_message().grand_child_message().double_value0(),
+            src.nested_message().grand_child_message().num(),
+            dst.nested_message().grand_child_message().num(),
             EPSILON);
-    EXPECT_NEAR(
-            src.nested_message().grand_child_message().double_value1(),
-            dst.nested_message().grand_child_message().double_value1(),
-            EPSILON);
+}
+
+TEST(EncodeDecodeTest, RepeatedDefaultMessageTest) {
+    stringstream ss;
+    StlInputStream iss(&ss);
+    StlOutputStream oss(&ss);
+
+    RepeatedMessage src;
+    RepeatedMessage dst;
+
+    // Build a message with a repeated field of default messages.
+    // {
+    //    simple_messages: [
+    //        {num: 0},  // default value
+    //    ]
+    // }
+    SimpleMessage* mut_simple = src.add_simple_messages();
+    mut_simple->set_num(0);
+
+    size_t size;
+    EXPECT_TRUE(EncodeMessage(oss, src, size));
+    EXPECT_TRUE(DecodeMessage(iss, &dst));
+
+    EXPECT_EQ(src.simple_messages().size(), dst.simple_messages().size());
+    EXPECT_EQ(src.simple_messages()[0].num(), dst.simple_messages()[0].num());
+}
+
+TEST(EncodeDecodeTest, RepeatedDefaultMessage_Depth2_Test) {
+    stringstream ss;
+    StlInputStream iss(&ss);
+    StlOutputStream oss(&ss);
+
+    RepeatedRepeatedMessage src;
+    RepeatedRepeatedMessage dst;
+
+    // Build a message with a repeated field of default messages.
+    // {
+    //    repeated_messages: [
+    //      {
+    //          simple_messages: [
+    //            {num: 0},  // default value
+    //          ]
+    //      }
+    //    ]
+    // }
+    RepeatedMessage* rep = src.add_repeated_messages();
+    rep->add_simple_messages()->set_num(0);
+
+    size_t size;
+    EXPECT_TRUE(EncodeMessage(oss, src, size));
+    EXPECT_TRUE(DecodeMessage(iss, &dst));
+
+    EXPECT_EQ(1, src.repeated_messages_size());
+    EXPECT_EQ(src.repeated_messages_size(), dst.repeated_messages_size());
+    EXPECT_EQ(1, src.get_repeated_messages(0).simple_messages_size());
+    EXPECT_EQ(
+            src.get_repeated_messages(0).simple_messages_size(),
+            dst.get_repeated_messages(0).simple_messages_size());
+    EXPECT_EQ(
+            src.get_repeated_messages(0).get_simple_messages(0).num(),
+            dst.get_repeated_messages(0).get_simple_messages(0).num());
+}
+
+TEST(EncodeDecodeTest, RepeatedMessageWithEnumTest) {
+    stringstream ss;
+    StlInputStream iss(&ss);
+    StlOutputStream oss(&ss);
+
+    RepeatedMessage src;
+    RepeatedMessage dst;
+
+    // Build a message with a repeated field of default messages.
+    // {
+    //    simple_messages: [
+    //        {enum_value: ENUM_A},
+    //    ]
+    // }
+    SimpleMessage* mut_simple = src.add_simple_messages();
+    mut_simple->set_enum_value(SimpleEnum::ENUM_A);
+
+    size_t size;
+    EXPECT_TRUE(EncodeMessage(oss, src, size));
+    EXPECT_TRUE(DecodeMessage(iss, &dst));
+
+    EXPECT_EQ(src.simple_messages().size(), dst.simple_messages().size());
+    EXPECT_EQ(
+            src.simple_messages()[0].enum_value(),
+            dst.simple_messages()[0].enum_value());
+}
+
+TEST(EncodeDecodeTest, RepeatedMessageWithBoolTest) {
+    stringstream ss;
+    StlInputStream iss(&ss);
+    StlOutputStream oss(&ss);
+
+    RepeatedMessage src;
+    RepeatedMessage dst;
+
+    // Build a message with a repeated field of default messages.
+    // {
+    //    simple_messages: [
+    //        {bool_value: true},
+    //    ]
+    // }
+    SimpleMessage* mut_simple = src.add_simple_messages();
+    mut_simple->set_bool_value(true);
+
+    size_t size;
+    EXPECT_TRUE(EncodeMessage(oss, src, size));
+    EXPECT_TRUE(DecodeMessage(iss, &dst));
+
+    EXPECT_EQ(src.simple_messages().size(), dst.simple_messages().size());
+    EXPECT_EQ(
+            src.simple_messages()[0].bool_value(),
+            dst.simple_messages()[0].bool_value());
 }

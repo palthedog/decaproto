@@ -17,3 +17,7 @@ message RepeatedMessage {
   repeated SimpleMessage simple_messages = 4;
   repeated OtherMessage other_messages = 5;
 }
+
+message RepeatedRepeatedMessage {
+  repeated RepeatedMessage repeated_messages = 1;
+}

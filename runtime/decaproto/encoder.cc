@@ -1,8 +1,7 @@
 #include "decaproto/encoder.h"
 
 #include <iostream>
-// For WireType
-// It should be defined elsewhere?
+
 #include "decaproto/decoder.h"
 #include "decaproto/descriptor.h"
 #include "decaproto/reflection.h"
@@ -354,20 +353,20 @@ bool EncodeFieldImpl(
         T (Reflection::*p_get)(const Message*, uint32_t) const,
         T (Reflection::*p_get_repeated)(const Message*, uint32_t, size_t) const,
         bool (CodedOutputStream::*p_write)(EncT)) {
-    uint32_t tag = field_desc.GetFieldNumber();
+    uint32_t field_number = field_desc.GetFieldNumber();
     if (field_desc.IsRepeated()) {
         // Treat enum values as int since we don't know the enum type
         // here
-        size_t field_count = reflection->FieldSize(&message, tag);
+        size_t field_count = reflection->FieldSize(&message, field_number);
         for (size_t i = 0; i < field_count; i++) {
-            T value = (reflection->*p_get_repeated)(&message, tag, i);
+            T value = (reflection->*p_get_repeated)(&message, field_number, i);
             if (!EncodeTag(stream, field_desc) ||
                 !(stream.*p_write)(MemcpyCast<T, EncT>(value))) {
                 return false;
             }
         }
     } else {
-        T value = (reflection->*p_get)(&message, tag);
+        T value = (reflection->*p_get)(&message, field_number);
         if (value != T()) {
             if (!EncodeTag(stream, field_desc) ||
                 !(stream.*p_write)(MemcpyCast<T, EncT>(value))) {
@@ -383,7 +382,7 @@ bool EncodeField(
         const Message& message,
         const Reflection* reflection,
         const FieldDescriptor& field_desc) {
-    uint32_t tag = field_desc.GetFieldNumber();
+    uint32_t field_number = field_desc.GetFieldNumber();
     switch (field_desc.GetType()) {
         case FieldType::kInt32:
             return EncodeFieldImpl<int32_t, uint32_t>(
@@ -425,10 +424,11 @@ bool EncodeField(
                     &CodedOutputStream::WriteVarint64);
         case FieldType::kString:
             if (field_desc.IsRepeated()) {
-                size_t field_count = reflection->FieldSize(&message, tag);
+                size_t field_count =
+                        reflection->FieldSize(&message, field_number);
                 for (size_t i = 0; i < field_count; i++) {
-                    const string& value =
-                            reflection->GetRepeatedString(&message, tag, i);
+                    const string& value = reflection->GetRepeatedString(
+                            &message, field_number, i);
                     // tag
                     if (!EncodeTag(stream, field_desc) ||
                         // LEN
@@ -441,7 +441,7 @@ bool EncodeField(
             } else {
                 // TODO: Implement hasser in reflection and use it to
                 // prevent memory allocation here.
-                string value = reflection->GetString(&message, tag);
+                string value = reflection->GetString(&message, field_number);
                 if (!value.empty()) {
                     // tag
                     if (!EncodeTag(stream, field_desc) ||
@@ -457,20 +457,21 @@ bool EncodeField(
         case FieldType::kEnum:
             // Treat enum values as int since we don't know the enum type
             // here
-            return EncodeFieldImpl<int, uint64_t>(
+            return EncodeFieldImpl<int, uint32_t>(
                     stream,
                     message,
                     reflection,
                     field_desc,
                     &Reflection::GetEnumValue,
                     &Reflection::GetRepeatedEnumValue,
-                    &CodedOutputStream::WriteVarint64);
+                    &CodedOutputStream::WriteVarint32);
         case FieldType::kMessage:
             if (field_desc.IsRepeated()) {
-                size_t field_count = reflection->FieldSize(&message, tag);
+                size_t field_count =
+                        reflection->FieldSize(&message, field_number);
                 for (size_t i = 0; i < field_count; i++) {
-                    const Message& value =
-                            reflection->GetRepeatedMessage(&message, tag, i);
+                    const Message& value = reflection->GetRepeatedMessage(
+                            &message, field_number, i);
                     size_t sub_msg_size = ComputeEncodedSize(value);
                     // tag
                     if (!EncodeTag(stream, field_desc) ||
@@ -486,7 +487,8 @@ bool EncodeField(
                     }
                 }
             } else {
-                const Message& value = reflection->GetMessage(&message, tag);
+                const Message& value =
+                        reflection->GetMessage(&message, field_number);
                 size_t sub_msg_size = ComputeEncodedSize(value);
                 if (sub_msg_size > 0) {
                     // Encode only if the sub message is non-default value

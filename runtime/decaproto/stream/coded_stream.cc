@@ -1,5 +1,7 @@
 #include "decaproto/stream/coded_stream.h"
 
+#include <iostream>
+
 namespace decaproto {
 
 bool CodedInputStream::ReadVarint64(uint64_t& result) {
