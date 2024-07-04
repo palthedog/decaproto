@@ -14,3 +14,18 @@ message NumericTypes {
     double double_value = 11;
     float float_value = 12;
 }
+
+message RepeatedNumericTypes {
+    repeated uint32 uint32_values = 1;
+    repeated uint64 uint64_values = 2;
+    repeated int32 int32_values = 3;
+    repeated int64 int64_values = 4;
+    repeated sint32 sint32_values = 5;
+    repeated sint64 sint64_values = 6;
+    repeated fixed32 fixed32_values = 7;
+    repeated fixed64 fixed64_values = 8;
+    repeated sfixed32 sfixed32_values = 9;
+    repeated sfixed64 sfixed64_values = 10;
+    repeated double double_values = 11;
+    repeated float float_values = 12;
+}

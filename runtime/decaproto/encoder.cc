@@ -89,7 +89,7 @@ size_t ComputeEncodedFieldSize(
         case FieldType::kUint32:
             if (field_desc.IsRepeated()) {
                 for (size_t i = 0; i < field_count; i++) {
-                    auto value =
+                    uint32_t value =
                             reflection->GetRepeatedUint32(&message, tag, i);
                     size += 1;  // tag
                     size += ComputeEncodedVarintSize(value);

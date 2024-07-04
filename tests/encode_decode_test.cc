@@ -71,15 +71,17 @@ TEST(EncodeDecodeTest, RepeatedMessageTest) {
 
     std::vector<SimpleMessage>* mut_simple_messages =
             src.mutable_simple_messages();
-    mut_simple_messages->resize(2);
+    mut_simple_messages->resize(3);
     (*mut_simple_messages)[0].set_str("foo");
-    (*mut_simple_messages)[1].set_str("bar");
+    //(*mut_simple_messages)[1]  // keep it a default message
+    (*mut_simple_messages)[2].set_str("bar");
 
     std::vector<OtherMessage>* mut_other_messages =
             src.mutable_other_messages();
-    mut_other_messages->resize(2);
+    mut_other_messages->resize(3);
     (*mut_other_messages)[0].set_other_num(100);
-    (*mut_other_messages)[1].set_other_num(200);
+    // (*mut_other_messages)[1]  // keep it a default message
+    (*mut_other_messages)[2].set_other_num(200);
 
     size_t size;
 
@@ -126,7 +128,7 @@ TEST(EncodeDecodeTest, NumericTypesTest) {
     src.set_fixed64_value(1234567890);
     src.set_sfixed32_value(-123);
     src.set_sfixed64_value(-1234567890);
-    src.set_float_value(3.14);
+    src.set_float_value(3.14f);
     src.set_double_value(2.71828);
 
     size_t size;
@@ -150,4 +152,84 @@ TEST(EncodeDecodeTest, NumericTypesTest) {
     EXPECT_EQ(src.sfixed64_value(), dst.sfixed64_value());
     EXPECT_NEAR(src.float_value(), dst.float_value(), EPSILON);
     EXPECT_NEAR(src.double_value(), dst.double_value(), EPSILON);
+}
+
+TEST(EncodeDecodeTest, RepeatedNumericTypesTest) {
+    stringstream ss;
+    StlInputStream iss(&ss);
+    StlOutputStream oss(&ss);
+
+    RepeatedNumericTypes src;
+    *src.add_int32_values() = 123;
+    *src.add_int32_values() = 0;
+    *src.add_int32_values() = 1230;
+    *src.add_int32_values() = -1230;
+
+    *src.add_int64_values() = 1234567890;
+    *src.add_int64_values() = 0;
+    *src.add_int64_values() = -1234567890;
+
+    *src.add_uint32_values() = 456;
+    *src.add_uint32_values() = 0;
+    *src.add_uint32_values() = 4560;
+
+    *src.add_uint64_values() = 9876543210;
+    *src.add_uint64_values() = 0;
+    *src.add_uint64_values() = 98765;
+
+    *src.add_sint32_values() = -123;
+    *src.add_sint32_values() = 0;
+    *src.add_sint32_values() = 123;
+
+    *src.add_sint64_values() = -1234567890;
+    *src.add_sint64_values() = 0;
+    *src.add_sint64_values() = 1234567890;
+
+    *src.add_fixed32_values() = 123;
+    *src.add_fixed32_values() = 0;
+    *src.add_fixed32_values() = 321;
+
+    *src.add_fixed64_values() = 1234567890;
+    *src.add_fixed64_values() = 0;
+    *src.add_fixed64_values() = 123456;
+
+    *src.add_sfixed32_values() = -123000;
+    *src.add_sfixed32_values() = 0;
+    *src.add_sfixed32_values() = 123000;
+
+    *src.add_sfixed64_values() = -1234567890;
+    *src.add_sfixed64_values() = 0;
+    *src.add_sfixed64_values() = 1234567890;
+
+    *src.add_float_values() = 3.14f;
+    *src.add_float_values() = -3.14f;
+    *src.add_float_values() = 0.0f;
+    *src.add_float_values() = 0.08f;
+
+    *src.add_double_values() = 2.71828;
+    *src.add_double_values() = -2.71828;
+    *src.add_double_values() = 0.0;
+    *src.add_double_values() = 0.01;
+
+    size_t size;
+    // Encode the message to the stream.
+    EXPECT_TRUE(EncodeMessage(oss, src, size));
+
+    // Decode the message from the stream.
+    RepeatedNumericTypes dst;
+    EXPECT_TRUE(DecodeMessage(iss, &dst));
+
+    // Let's compare the fields of the source and destination messages.
+    testRepeatedField(src.int32_values(), dst.int32_values());
+    testRepeatedField(src.int64_values(), dst.int64_values());
+    testRepeatedField(src.uint32_values(), dst.uint32_values());
+    testRepeatedField(src.uint64_values(), dst.uint64_values());
+    testRepeatedField(src.sint32_values(), dst.sint32_values());
+    testRepeatedField(src.sint64_values(), dst.sint64_values());
+    testRepeatedField(src.fixed32_values(), dst.fixed32_values());
+    testRepeatedField(src.fixed64_values(), dst.fixed64_values());
+    testRepeatedField(src.sfixed32_values(), dst.sfixed32_values());
+    testRepeatedField(src.sfixed64_values(), dst.sfixed64_values());
+    testRepeatedField(src.float_values(), dst.float_values());
+    testRepeatedField(src.double_values(), dst.double_values());
 }
