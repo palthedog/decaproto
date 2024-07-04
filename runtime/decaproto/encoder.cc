@@ -15,7 +15,19 @@ namespace {
 
 template <typename SRC_T, typename DST_T>
 DST_T MemcpyCast(SRC_T src) {
-    return *(DST_T*)(&src);
+    if constexpr (sizeof(SRC_T) > sizeof(DST_T)) {
+        cerr << "MemcpyCast: size of input is bigger than output variable."
+             << endl;
+        return DST_T();
+    } else if constexpr (sizeof(SRC_T) == sizeof(DST_T)) {
+        return *(DST_T*)(&src);
+    } else {
+        DST_T dst = 0;
+        for (size_t i = 0; i < sizeof(SRC_T); i++) {
+            ((uint8_t*)&dst)[i] = ((uint8_t*)&src)[i];
+        }
+        return dst;
+    }
 }
 
 template <bool, typename DST_T>

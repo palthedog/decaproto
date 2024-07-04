@@ -1,0 +1,8 @@
+syntax = "proto3";
+
+message OneOfMessge {
+    oneof oneof_field {
+        string str = 1;
+        int32 num = 2;
+    }
+}
