@@ -6,6 +6,7 @@
 
 // TODO: We need to remove it since Arduino doesn't support <iostream>.
 //    Instead, we should privide a way to inject a logger.
+#include <cstring>
 #include <iostream>
 
 // https://protobuf.dev/programming-guides/encoding/
@@ -47,13 +48,27 @@ namespace {
 
 template <typename SRC_T, typename DST_T>
 DST_T MemcpyCast(SRC_T src) {
-    return *(DST_T*)(&src);
+    return (DST_T)src;
 }
 
-template <typename SRC_T, bool>
-bool MemcpyCast(SRC_T src) {
+template <>
+bool MemcpyCast<uint32_t, bool>(uint32_t src) {
     // bool is encoded as either 0 or 1.
-    return src == 0 ? false : 1;
+    return src == 0 ? false : true;
+}
+
+template <>
+double MemcpyCast<uint64_t, double>(uint64_t src) {
+    double dst = 0;
+    memcpy(&dst, &src, sizeof(src));
+    return dst;
+}
+
+template <>
+float MemcpyCast<uint32_t, float>(uint32_t src) {
+    float dst = 0;
+    memcpy(&dst, &src, sizeof(src));
+    return dst;
 }
 
 }  // namespace
