@@ -375,7 +375,6 @@ func addMessageField(f *descriptor.FieldDescriptorProto, type_name *TypeNameInfo
 	// Getter for {{.f_name}}
 	const {{.cc_type}}& {{.f_name}}() const {
 		if (!{{.holder_name}}) {
-			//{{.holder_name}}.reset(new {{.cc_type}}());
 			{{.holder_name}}.resetDefault();
         }
 	    return *{{.holder_name}};
@@ -384,7 +383,6 @@ func addMessageField(f *descriptor.FieldDescriptorProto, type_name *TypeNameInfo
 	// Mutable Getter for {{.f_name}}
 	{{.cc_type}}* mutable_{{.f_name}}() {
 	    if (!{{.holder_name}}) {
-			//{{.holder_name}}.reset(new {{.cc_type}}());
 			{{.holder_name}}.resetDefault();
         }
         {{.has_holder_name}} = true;

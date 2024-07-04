@@ -378,3 +378,22 @@ TEST(EncodeDecodeTest, RepeatedMessageWithBoolTest) {
             src.simple_messages()[0].bool_value(),
             dst.simple_messages()[0].bool_value());
 }
+
+TEST(EncodeDecodeTest, DefaultSubMessageTest) {
+    stringstream ss;
+    StlInputStream iss(&ss);
+    StlOutputStream oss(&ss);
+
+    SimpleMessage src;
+    SimpleMessage dst;
+
+    // Set OtherMessage but with default value.
+    src.mutable_other()->set_other_num(0);
+    EXPECT_TRUE(src.has_other());
+
+    size_t size;
+    EXPECT_TRUE(EncodeMessage(oss, src, size));
+    EXPECT_TRUE(DecodeMessage(iss, &dst));
+
+    EXPECT_TRUE(dst.has_other());
+}

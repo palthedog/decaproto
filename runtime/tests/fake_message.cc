@@ -50,6 +50,8 @@ const Reflection* FakeMessage::GetReflection() const {
             kOtherTag, MsgCast(&FakeMessage::mutable_other));
     kTestReflection->RegisterGetMessage(
             kOtherTag, MsgCast(&FakeMessage::other));
+    kTestReflection->RegisterHasField(
+            kOtherTag, MsgCast(&FakeMessage::has_other));
 
     // FakeEnum enum_field = 4
     kTestReflection->RegisterSetEnumValue(

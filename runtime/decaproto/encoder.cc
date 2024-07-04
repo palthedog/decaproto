@@ -238,8 +238,9 @@ size_t ComputeEncodedFieldSize(
                 }
             } else {
                 const Message& value = reflection->GetMessage(&message, tag);
-                size_t sub_msg_size = ComputeEncodedSize(value);
-                if (sub_msg_size > 0) {
+                bool has_field = reflection->HasField(&message, tag);
+                if (has_field) {
+                    size_t sub_msg_size = ComputeEncodedSize(value);
                     // Encode only if the sub message is non-default value
                     // tag
                     size += 1;
@@ -505,8 +506,9 @@ bool EncodeField(
             } else {
                 const Message& value =
                         reflection->GetMessage(&message, field_number);
-                size_t sub_msg_size = ComputeEncodedSize(value);
-                if (sub_msg_size > 0) {
+                bool has_field = reflection->HasField(&message, field_number);
+                if (has_field) {
+                    size_t sub_msg_size = ComputeEncodedSize(value);
                     // Encode only if the sub message is non-default value
                     // tag
                     if (!EncodeTag(stream, field_desc) ||

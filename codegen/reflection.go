@@ -89,7 +89,7 @@ func printReflection(m *descriptor.DescriptorProto, fp *FilePrinter, mp *Message
 					"msg_full_name":  msg_full_name,
 					"field_name":     f.GetName(),
 				})
-		} else if f.GetType() == descriptor.FieldDescriptorProto_TYPE_MESSAGE || f.GetType() == descriptor.FieldDescriptorProto_TYPE_STRING {
+		} else if f.GetType() == descriptor.FieldDescriptorProto_TYPE_STRING {
 			// Message should be accessed via
 			// getter and mutable getter
 			src += print("reg_msg_field", `
@@ -101,6 +101,30 @@ func printReflection(m *descriptor.DescriptorProto, fp *FilePrinter, mp *Message
     {{.singleton_name}}->RegisterGet{{.cc_camel_name}}(
         {{.tag}},
 		decaproto::MsgCast(&{{.msg_full_name}}::{{.field_name}}));
+`,
+				map[string]string{
+					"singleton_name": singleton_name,
+					"tag":            tag_str,
+					"cc_camel_name":  type_name.cc_camel_name,
+					"msg_full_name":  msg_full_name,
+					"field_name":     f.GetName(),
+				})
+		} else if f.GetType() == descriptor.FieldDescriptorProto_TYPE_MESSAGE {
+			// Message should be accessed via
+			// getter and mutable getter
+			src += print("reg_msg_field", `
+    // Mutable getter for {{.field_name}}
+    {{.singleton_name}}->RegisterMutable{{.cc_camel_name}}(
+        {{.tag}},
+		decaproto::MsgCast(&{{.msg_full_name}}::mutable_{{.field_name}}));
+    // Getter for {{.field_name}}
+    {{.singleton_name}}->RegisterGet{{.cc_camel_name}}(
+        {{.tag}},
+		decaproto::MsgCast(&{{.msg_full_name}}::{{.field_name}}));
+    // Hazzer for {{.field_name}}
+    {{.singleton_name}}->RegisterHasField(
+        {{.tag}},
+		decaproto::MsgCast(&{{.msg_full_name}}::has_{{.field_name}}));
 `,
 				map[string]string{
 					"singleton_name": singleton_name,

@@ -96,7 +96,7 @@ public:
         return &str_;
     }
 
-    bool has_other() {
+    bool has_other() const {
         return has_other_;
     }
 

@@ -57,6 +57,8 @@ class Reflection final {
 
     using SizeRepeatedFn = std::function<size_t(const Message*)>;
 
+    using HasFn = std::function<bool(const Message*)>;
+
     // Define accessors and register functions for primitive types
 
 #define DEFINE_FOR(cc_type, CcType)                                            \
@@ -205,6 +207,7 @@ private:
     // For fields which we shouldn't copy
     // We provide a mutable getter and getter which returns a reference
     std::map<uint32_t, SizeRepeatedFn> field_size_impls_;
+    std::map<uint32_t, HasFn> has_field_impls_;
 
 public:
     size_t FieldSize(const Message* message, uint32_t tag) const {
@@ -215,6 +218,17 @@ public:
 
     void RegisterFieldSize(uint32_t tag, const SizeRepeatedFn& size_fn) {
         field_size_impls_[tag] = size_fn;
+    }
+
+    bool HasField(const Message* message, uint32_t tag) const {
+        auto it = has_field_impls_.find(tag);
+        std::cerr << "tag: " << tag << std::endl;
+        assert(it != has_field_impls_.end());
+        return it->second(message);
+    }
+
+    void RegisterHasField(uint32_t tag, const HasFn& has_fn) {
+        has_field_impls_[tag] = has_fn;
     }
 };
 
