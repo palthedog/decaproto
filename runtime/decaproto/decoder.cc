@@ -52,12 +52,6 @@ DST_T MemcpyCast(SRC_T src) {
 }
 
 template <>
-bool MemcpyCast<uint32_t, bool>(uint32_t src) {
-    // bool is encoded as either 0 or 1.
-    return src == 0 ? false : true;
-}
-
-template <>
 double MemcpyCast<uint64_t, double>(uint64_t src) {
     double dst = 0;
     memcpy(&dst, &src, sizeof(src));
