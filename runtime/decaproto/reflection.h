@@ -222,7 +222,6 @@ public:
 
     bool HasField(const Message* message, uint32_t tag) const {
         auto it = has_field_impls_.find(tag);
-        std::cerr << "tag: " << tag << std::endl;
         assert(it != has_field_impls_.end());
         return it->second(message);
     }

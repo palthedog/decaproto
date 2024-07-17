@@ -69,6 +69,8 @@ func processMessage(ctx *Context, m *descriptor.DescriptorProto) {
 	}
 	printDescriptor(m, ctx.printer, msg_printer)
 	printReflection(m, ctx.printer, msg_printer)
+	printComputeEncodedSize(m, ctx, msg_printer)
+	printEncoder(m, ctx, msg_printer)
 
 	ctx.printer.definitions += msg_printer.printClassDefinition()
 
@@ -87,19 +89,6 @@ func (mp *MessagePrinter) printClassDefinition() string {
 		out += strings.Join(mp.init_default_values, "\n        , ")
 	}
 	out += " {}\n\n"
-
-	/*
-		// Copy Constructor
-		out += "    " + mp.full_name + "(const " + mp.full_name + "& other)"
-		// TODO
-		out += " {}\n\n"
-	*/
-	// operator=
-	/*
-		out += "    const " + mp.full_name + "& operator=(const " + mp.full_name + "& other) {"
-
-		out += "}\n\n"
-	*/
 
 	// Destructor
 	out += "    ~" + mp.full_name + "() {}\n"
@@ -287,6 +276,8 @@ func processReq(req *plugin.CodeGeneratorRequest) *plugin.CodeGeneratorResponse 
 		ctx.printer.source_content += "\n"
 		ctx.printer.source_content += "#include <cassert>\n"
 		ctx.printer.source_content += "#include \"decaproto/reflection_util.h\"\n"
+		ctx.printer.source_content += "#include \"decaproto/encoder.h\"\n"
+		ctx.printer.source_content += "#include \"decaproto/stream/coded_stream.h\"\n"
 		ctx.printer.source_content += "\n"
 
 		for _, enm := range f.EnumType {

@@ -1,0 +1,12 @@
+
+# Based on Google C/C++ Code Style settings
+
+Language: Cpp
+BasedOnStyle: Google
+
+AllowShortFunctionsOnASingleLine: false
+AlignAfterOpenBracket: AlwaysBreak
+
+AllowAllArgumentsOnNextLine: true
+BinPackArguments: false
+BinPackParameters: false

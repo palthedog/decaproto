@@ -3,6 +3,43 @@
 using namespace decaproto;
 using namespace std;
 
+bool FakeMessage::EncodeImpl(decaproto::CodedOutputStream& stream) const {
+    if (num_ != 0) {
+        stream.WriteTag(kOtherNumTag, decaproto::WireType::kVarint);
+        stream.WriteVarint32(num_);
+    }
+
+    if (!str_.empty()) {
+        stream.WriteTag(kStrTag, decaproto::WireType::kLen);
+        stream.WriteVarint32(str_.size());
+        stream.WriteString(str_);
+    }
+
+    if (has_other_) {
+        stream.WriteTag(kOtherTag, decaproto::WireType::kLen);
+        size_t size = other_->ComputeEncodedSize();
+        stream.WriteVarint32(size);
+        other_->EncodeImpl(stream);
+    }
+
+    if (enum_field_ != FakeEnum()) {
+        stream.WriteTag(kEnumFieldTag, decaproto::WireType::kVarint);
+        stream.WriteVarint32(static_cast<uint32_t>(enum_field_));
+    }
+
+    for (uint32_t num : rep_nums_) {
+        stream.WriteTag(kRepNumsTag, decaproto::WireType::kVarint);
+        stream.WriteVarint32(num);
+    }
+
+    for (FakeEnum e : rep_enums_) {
+        stream.WriteTag(kRepEnumsTag, decaproto::WireType::kVarint);
+        stream.WriteVarint32(static_cast<uint32_t>(e));
+    }
+
+    return true;
+}
+
 Descriptor* kTestDescriptor = nullptr;
 Reflection* kTestReflection = nullptr;
 
@@ -62,8 +99,6 @@ const Reflection* FakeMessage::GetReflection() const {
     // repeated uint32 rep_nums = 5
     kTestReflection->RegisterGetRepeatedUint32(
             kRepNumsTag, MsgCast(&FakeMessage::get_rep_nums));
-    // kTestReflection->RegisterSetRepeatedUint32(
-    // kRepNumsTag, MsgCast(&FakeMessage::set_rep_nums));
     kTestReflection->RegisterAddRepeatedUint32(
             kRepNumsTag, MsgCast(&FakeMessage::add_rep_nums));
     kTestReflection->RegisterFieldSize(
@@ -72,11 +107,6 @@ const Reflection* FakeMessage::GetReflection() const {
     // repeated Fake rep_enums = 6
     kTestReflection->RegisterGetRepeatedEnumValue(
             kRepEnumsTag, MsgCast(&FakeMessage::get_rep_enums));
-    /*
-kTestReflection->RegisterSetRepeatedEnumValue(
-    kRepEnumsTag,
-    CastForSetRepeatedEnumValue(&FakeMessage::set_rep_enums));
-    */
     kTestReflection->RegisterAddRepeatedEnumValue(
             kRepEnumsTag,
             CastForAddRepeatedEnumValue(&FakeMessage::add_rep_enums));
@@ -84,6 +114,15 @@ kTestReflection->RegisterSetRepeatedEnumValue(
             kRepEnumsTag, MsgCast(&FakeMessage::rep_enums_size));
 
     return kTestReflection;
+}
+
+bool FakeOtherMessage::EncodeImpl(decaproto::CodedOutputStream& stream) const {
+    if (num_ != 0) {
+        stream.WriteTag(kNumTag, decaproto::WireType::kVarint);
+        stream.WriteVarint32(num_);
+    }
+
+    return true;
 }
 
 Descriptor* kFakeOtherDescriptor = nullptr;

@@ -7,21 +7,6 @@
 
 namespace decaproto {
 
-enum WireType {
-    // 0	VARINT	int32, int64, uint32, uint64, sint32, sint64, bool, enum
-    kVarint = 0,
-    // 1	I64	fixed64, sfixed64, double
-    kI64 = 1,
-    // 2	LEN	string, bytes, embedded messages, packed repeated fields
-    kLen = 2,
-    // 3	SGROUP	group start (deprecated)
-    kDeprecated_SGroup = 3,
-    // 4	EGROUP	group end (deprecated)
-    kDeprecated_EGroup = 4,
-    // 5	I32	fixed32, sfixed32, float
-    kI32 = 5,
-};
-
 inline WireType GetWireType(FieldType type) {
     switch (type) {
         case kInt32:

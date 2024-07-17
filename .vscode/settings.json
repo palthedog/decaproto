@@ -81,7 +81,8 @@
         "stop_token": "cpp",
         "thread": "cpp",
         "typeindex": "cpp",
-        "variant": "cpp"
+        "variant": "cpp",
+        "xstring": "cpp"
     },
     "go.formatTool": "gofmt",
     "cmake.configureOnOpen": false,

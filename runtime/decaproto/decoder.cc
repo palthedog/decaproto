@@ -374,14 +374,10 @@ bool DecodeMessage(
         const Descriptor* descriptor) {
     //  message    := (tag value)*
 
-    cerr << "DecodeMessage" << endl;
-
     uint32_t field_number;
     WireType wire_type;
 
     size_t consumed_start_size = cis.ConsumedSize();
-    cerr << "DecodeMessage. consumed start: " << consumed_start_size << endl;
-    cerr << "   len: " << size << endl;
     while ((cis.ConsumedSize() - consumed_start_size) < size &&
            DecodeTag(cis, field_number, wire_type)) {
         const FieldDescriptor* field =
@@ -453,9 +449,6 @@ bool DecodeMessage(
         }
     }
 
-    cerr << "End of DecodeMessage. consumed start: start: "
-         << cis.ConsumedSize() << endl;
-
     if (size == SIZE_MAX) {
         // The callder doesn't care about the message size.
         return true;
@@ -466,9 +459,6 @@ bool DecodeMessage(
              << ", Consumed: " << (cis.ConsumedSize() - consumed_start_size)
              << endl;
         return false;
-    } else {
-        cerr << "Length check OK: "
-             << (cis.ConsumedSize() - consumed_start_size) << endl;
     }
     return true;
 }

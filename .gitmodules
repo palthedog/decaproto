@@ -1,0 +1,3 @@
+[submodule "examples/platformio/lib/nanopb"]
+	path = examples/platformio/lib/nanopb
+	url = https://github.com/nanopb/nanopb.git

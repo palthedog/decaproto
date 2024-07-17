@@ -1,0 +1,21 @@
+syntax = "proto3";
+
+message Detail {
+  double value_a = 1;
+  double value_b = 2;
+}
+
+message State {
+  uint32 timestamp = 1;
+
+  uint32 id = 2;
+
+  double double_value = 3;
+  bool bool_value = 4;
+
+  Detail detail = 5;
+}
+
+message Response {
+  repeated State states = 1;
+}

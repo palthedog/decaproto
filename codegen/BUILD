@@ -13,6 +13,7 @@ go_library(
     name = "codegen_lib",
     srcs = [
         "descriptor.go",
+        "encoder.go",
         "field.go",
         "main.go",
         "reflection.go",

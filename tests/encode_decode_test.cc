@@ -31,7 +31,7 @@ TEST(EncodeDecodeTest, SimpleMessageTest) {
 
     size_t size;
     // Encode the message to the stream.
-    EXPECT_TRUE(EncodeMessage(oss, src, size));
+    EXPECT_TRUE(src.Encode(oss, size));
 
     // Decode the message from the stream.
     SimpleMessage dst;
@@ -88,7 +88,7 @@ TEST(EncodeDecodeTest, RepeatedMessageTest) {
 
     // Encode the message to the stream.
 
-    EXPECT_TRUE(EncodeMessage(oss, src, size));
+    EXPECT_TRUE(src.Encode(oss, size));
 
     // Decode the message from the stream.
     RepeatedMessage dst;
@@ -134,7 +134,7 @@ TEST(EncodeDecodeTest, NumericTypesTest) {
 
     size_t size;
     // Encode the message to the stream.
-    EXPECT_TRUE(EncodeMessage(oss, src, size));
+    EXPECT_TRUE(src.Encode(oss, size));
 
     // Decode the message from the stream.
     NumericTypes dst;
@@ -214,7 +214,7 @@ TEST(EncodeDecodeTest, RepeatedNumericTypesTest) {
 
     size_t size;
     // Encode the message to the stream.
-    EXPECT_TRUE(EncodeMessage(oss, src, size));
+    EXPECT_TRUE(src.Encode(oss, size));
 
     // Decode the message from the stream.
     RepeatedNumericTypes dst;
@@ -248,7 +248,7 @@ TEST(EncodeDecodeTest, NestedMessageTest) {
 
     size_t size;
     // Encode the message to the stream.
-    EXPECT_TRUE(EncodeMessage(oss, src, size));
+    EXPECT_TRUE(src.Encode(oss, size));
 
     // Decode the message from the stream.
     OuterMessage dst;
@@ -282,7 +282,7 @@ TEST(EncodeDecodeTest, RepeatedDefaultMessageTest) {
     mut_simple->set_num(0);
 
     size_t size;
-    EXPECT_TRUE(EncodeMessage(oss, src, size));
+    EXPECT_TRUE(src.Encode(oss, size));
     EXPECT_TRUE(DecodeMessage(iss, &dst));
 
     EXPECT_EQ(src.simple_messages().size(), dst.simple_messages().size());
@@ -311,7 +311,7 @@ TEST(EncodeDecodeTest, RepeatedDefaultMessage_Depth2_Test) {
     rep->add_simple_messages()->set_num(0);
 
     size_t size;
-    EXPECT_TRUE(EncodeMessage(oss, src, size));
+    EXPECT_TRUE(src.Encode(oss, size));
     EXPECT_TRUE(DecodeMessage(iss, &dst));
 
     EXPECT_EQ(1, src.repeated_messages_size());
@@ -343,7 +343,7 @@ TEST(EncodeDecodeTest, RepeatedMessageWithEnumTest) {
     mut_simple->set_enum_value(SimpleEnum::ENUM_A);
 
     size_t size;
-    EXPECT_TRUE(EncodeMessage(oss, src, size));
+    EXPECT_TRUE(src.Encode(oss, size));
     EXPECT_TRUE(DecodeMessage(iss, &dst));
 
     EXPECT_EQ(src.simple_messages().size(), dst.simple_messages().size());
@@ -370,7 +370,7 @@ TEST(EncodeDecodeTest, RepeatedMessageWithBoolTest) {
     mut_simple->set_bool_value(true);
 
     size_t size;
-    EXPECT_TRUE(EncodeMessage(oss, src, size));
+    EXPECT_TRUE(src.Encode(oss, size));
     EXPECT_TRUE(DecodeMessage(iss, &dst));
 
     EXPECT_EQ(src.simple_messages().size(), dst.simple_messages().size());
@@ -392,7 +392,7 @@ TEST(EncodeDecodeTest, DefaultSubMessageTest) {
     EXPECT_TRUE(src.has_other());
 
     size_t size;
-    EXPECT_TRUE(EncodeMessage(oss, src, size));
+    EXPECT_TRUE(src.Encode(oss, size));
     EXPECT_TRUE(DecodeMessage(iss, &dst));
 
     EXPECT_TRUE(dst.has_other());

@@ -5,10 +5,12 @@
 #include <vector>
 
 #include "decaproto/descriptor.h"
+#include "decaproto/encoder.h"
 #include "decaproto/field.h"
 #include "decaproto/message.h"
 #include "decaproto/reflection.h"
 #include "decaproto/reflection_util.h"
+#include "decaproto/stream/coded_stream.h"
 
 enum FakeEnum {
     UNKNOWN = 0,
@@ -33,6 +35,17 @@ public:
         num_ = num;
     }
 
+    virtual size_t ComputeEncodedSize() const override {
+        size_t size = 0;
+        if (num_ != 0) {
+            size += 1;  // tag
+            size += decaproto::ComputeEncodedVarintSize(num_);
+        }
+        return size;
+    }
+
+    bool EncodeImpl(decaproto::CodedOutputStream& stream) const override;
+
     const decaproto::Descriptor* GetDescriptor() const override;
     const decaproto::Reflection* GetReflection() const override;
 };
@@ -56,7 +69,6 @@ class FakeMessage : public decaproto::Message {
 
     // FakeEnum enum_field= 4
     FakeEnum enum_field_;
-    bool has_enum_field_ = false;
 
     // repeated uint32 rep_nums = 5
     std::vector<uint32_t> rep_nums_;
@@ -126,11 +138,6 @@ public:
 
     void set_enum_field(FakeEnum enum_field) {
         enum_field_ = enum_field;
-        has_enum_field_ = true;
-    }
-
-    bool has_enum_field() {
-        return has_enum_field_;
     }
 
     const std::vector<uint32_t>& rep_nums() const {
@@ -181,6 +188,47 @@ public:
 
     size_t rep_enums_size() const {
         return rep_enums_.size();
+    }
+
+    virtual bool EncodeImpl(
+            decaproto::CodedOutputStream& stream) const override;
+    virtual size_t ComputeEncodedSize() const override {
+        size_t size = 0;
+        if (num_ != uint32_t()) {
+            size += 1;  // tag
+            size += decaproto::ComputeEncodedVarintSize(num_);
+        }
+
+        if (str_ != std::string()) {
+            size += 1;  // tag
+            size += decaproto::ComputeEncodedVarintSize(str_.size());
+            size += str_.size();
+        }
+
+        if (has_other_) {
+            size_t sub_msg_size = other_->ComputeEncodedSize();
+            size += 1;  // tag
+            size += decaproto::ComputeEncodedVarintSize(sub_msg_size);
+            size += sub_msg_size;
+        }
+
+        if (enum_field_ != FakeEnum()) {
+            size += 1;  // tag
+            size += decaproto::ComputeEncodedVarintSize(
+                    static_cast<uint64_t>(enum_field_));
+        }
+
+        for (const auto& num : rep_nums_) {
+            size += 1;  // tag
+            size += decaproto::ComputeEncodedVarintSize(num);
+        }
+
+        for (const auto& rep_enum : rep_enums_) {
+            size += 1;  // tag
+            size += decaproto::ComputeEncodedVarintSize(rep_enum);
+        }
+
+        return size;
     }
 
     const decaproto::Descriptor* GetDescriptor() const override;

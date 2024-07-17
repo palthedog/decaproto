@@ -16,15 +16,15 @@ TEST(EncoderTest, VarintSizeTest) {
     FakeMessage m;
     m.set_num(150);
 
-    // tag(1) + varint(2
-    EXPECT_EQ(3, ComputeEncodedSize(m));
+    // tag(1) + varint(2)
+    EXPECT_EQ(3, m.ComputeEncodedSize());
 }
 
 TEST(EncoderTest, DefaultVarintSizeTest) {
     FakeMessage m;
     m.set_num(0);
 
-    EXPECT_EQ(0, ComputeEncodedSize(m));
+    EXPECT_EQ(0, m.ComputeEncodedSize());
 }
 
 TEST(EncoderTest, StringSizeTest) {
@@ -32,14 +32,14 @@ TEST(EncoderTest, StringSizeTest) {
     m.set_str("testing");
 
     // tag(1) + len(1) + value(7)
-    EXPECT_EQ(9, ComputeEncodedSize(m));
+    EXPECT_EQ(9, m.ComputeEncodedSize());
 }
 
 TEST(EncoderTest, DefaultStringSizeTest) {
     FakeMessage m;
     m.set_str("");
 
-    EXPECT_EQ(0, ComputeEncodedSize(m));
+    EXPECT_EQ(0, m.ComputeEncodedSize());
 }
 
 TEST(EncoderTest, EnumValueSizeTest) {
@@ -47,7 +47,7 @@ TEST(EncoderTest, EnumValueSizeTest) {
     m.set_enum_field(FakeEnum::ENUM_B);
 
     // tag(1) + varint(1)
-    EXPECT_EQ(2, ComputeEncodedSize(m));
+    EXPECT_EQ(2, m.ComputeEncodedSize());
 }
 
 TEST(EncoderTest, RepeatedNumSizeTest) {
@@ -57,7 +57,7 @@ TEST(EncoderTest, RepeatedNumSizeTest) {
     m.mutable_rep_nums()->push_back(20);
 
     // tag(1) + varint(1) + tag(1) + varint(2) + tag(1) + varint(1)
-    EXPECT_EQ(7, ComputeEncodedSize(m));
+    EXPECT_EQ(7, m.ComputeEncodedSize());
 }
 
 TEST(EncoderTest, RepeatedNumWithDefaultValueSizeTest) {
@@ -70,7 +70,7 @@ TEST(EncoderTest, RepeatedNumWithDefaultValueSizeTest) {
     m.mutable_rep_nums()->push_back(20);
 
     // tag(1) + varint(1) + tag(1) + varint(1) + tag(1) + varint(1)
-    EXPECT_EQ(6, ComputeEncodedSize(m));
+    EXPECT_EQ(6, m.ComputeEncodedSize());
 }
 
 TEST(EncoderTest, SubMessageSizeTest) {
@@ -79,7 +79,7 @@ TEST(EncoderTest, SubMessageSizeTest) {
 
     // tag(1) + len(1)
     // sub_message(3)
-    EXPECT_EQ(5, ComputeEncodedSize(m));
+    EXPECT_EQ(5, m.ComputeEncodedSize());
 }
 
 TEST(EncoderTest, EncodeNumTest) {
@@ -91,7 +91,7 @@ TEST(EncoderTest, EncodeNumTest) {
     m.set_num(150);
 
     size_t written_size;
-    EXPECT_TRUE(EncodeMessage(outs, m, written_size));
+    EXPECT_TRUE(m.Encode(outs, written_size));
     EXPECT_EQ(3, written_size);
 
     EXPECT_EQ(0x08, ss.get());
@@ -107,7 +107,7 @@ TEST(EncoderTest, EncodeStringTest) {
     m.set_str("testing");
 
     size_t written_size;
-    EXPECT_TRUE(EncodeMessage(outs, m, written_size));
+    EXPECT_TRUE(m.Encode(outs, written_size));
     EXPECT_EQ(9, written_size);
 
     EXPECT_EQ(0x12, ss.get());
@@ -129,7 +129,7 @@ TEST(EncoderTest, EncodeSubMessageTest) {
     m.mutable_other()->set_num(150);
 
     size_t written_size;
-    EXPECT_TRUE(EncodeMessage(outs, m, written_size));
+    EXPECT_TRUE(m.Encode(outs, written_size));
     EXPECT_EQ(5, written_size);
 
     EXPECT_EQ(0x1A, ss.get());

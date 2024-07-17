@@ -70,7 +70,7 @@ TEST(ReflectionTest, SetEnumValueTest) {
     // Note that the order of fields in the descriptor is not guaranteed.
 
     // m doesn't have the field yet
-    EXPECT_FALSE(m.has_enum_field());
+    EXPECT_EQ(FakeEnum(), m.enum_field());
 
     // Note that the order of fields in the descriptor is not guaranteed.
     const FieldDescriptor& field_desc =
@@ -81,7 +81,6 @@ TEST(ReflectionTest, SetEnumValueTest) {
     reflection->SetEnumValue(
             &m, field_desc.GetFieldNumber(), (int)FakeEnum::ENUM_B);
 
-    EXPECT_TRUE(m.has_enum_field());
     EXPECT_EQ(FakeEnum::ENUM_B, m.enum_field());
 }
 
