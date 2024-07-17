@@ -64,13 +64,15 @@ size_t ComputeEncodedFieldSize(
 
     uint32_t tag = field_desc.GetFieldNumber();
     size_t field_count = 1;
+    bool is_repeated = false;
     if (field_desc.IsRepeated()) {
+        is_repeated = true;
         field_count = reflection->FieldSize(&message, tag);
     }
 
     switch (field_desc.GetType()) {
         case FieldType::kInt32:
-            if (field_desc.IsRepeated()) {
+            if (is_repeated) {
                 for (size_t i = 0; i < field_count; i++) {
                     auto value = reflection->GetRepeatedInt32(&message, tag, i);
                     size += 1;  // tag
@@ -85,7 +87,7 @@ size_t ComputeEncodedFieldSize(
             }
             break;
         case FieldType::kSint32:
-            if (field_desc.IsRepeated()) {
+            if (is_repeated) {
                 for (size_t i = 0; i < field_count; i++) {
                     auto value = CodedOutputStream::EncodeZigZag(
                             reflection->GetRepeatedSint32(&message, tag, i));
@@ -102,7 +104,7 @@ size_t ComputeEncodedFieldSize(
             }
             break;
         case FieldType::kUint32:
-            if (field_desc.IsRepeated()) {
+            if (is_repeated) {
                 for (size_t i = 0; i < field_count; i++) {
                     uint32_t value =
                             reflection->GetRepeatedUint32(&message, tag, i);
@@ -118,7 +120,7 @@ size_t ComputeEncodedFieldSize(
             }
             break;
         case FieldType::kBool:
-            if (field_desc.IsRepeated()) {
+            if (is_repeated) {
                 for (size_t i = 0; i < field_count; i++) {
                     auto value =
                             reflection->GetRepeatedUint32(&message, tag, i);
@@ -134,7 +136,7 @@ size_t ComputeEncodedFieldSize(
             }
             break;
         case FieldType::kInt64:
-            if (field_desc.IsRepeated()) {
+            if (is_repeated) {
                 for (size_t i = 0; i < field_count; i++) {
                     auto value = reflection->GetRepeatedInt64(&message, tag, i);
                     size += 1;  // tag
@@ -149,7 +151,7 @@ size_t ComputeEncodedFieldSize(
             }
             break;
         case FieldType::kSint64:
-            if (field_desc.IsRepeated()) {
+            if (is_repeated) {
                 for (size_t i = 0; i < field_count; i++) {
                     int64_t value = CodedOutputStream::EncodeZigZag(
                             reflection->GetRepeatedSint64(&message, tag, i));
@@ -166,7 +168,7 @@ size_t ComputeEncodedFieldSize(
             }
             break;
         case FieldType::kUint64:
-            if (field_desc.IsRepeated()) {
+            if (is_repeated) {
                 for (size_t i = 0; i < field_count; i++) {
                     auto value =
                             reflection->GetRepeatedUint64(&message, tag, i);
@@ -182,7 +184,7 @@ size_t ComputeEncodedFieldSize(
             }
             break;
         case FieldType::kString:
-            if (field_desc.IsRepeated()) {
+            if (is_repeated) {
                 for (size_t i = 0; i < field_count; i++) {
                     auto& value =
                             reflection->GetRepeatedString(&message, tag, i);
@@ -208,7 +210,7 @@ size_t ComputeEncodedFieldSize(
             }
             break;
         case FieldType::kEnum:
-            if (field_desc.IsRepeated()) {
+            if (is_repeated) {
                 for (size_t i = 0; i < field_count; i++) {
                     auto value =
                             reflection->GetRepeatedEnumValue(&message, tag, i);
@@ -224,7 +226,7 @@ size_t ComputeEncodedFieldSize(
             }
             break;
         case FieldType::kMessage:
-            if (field_desc.IsRepeated()) {
+            if (is_repeated) {
                 for (size_t i = 0; i < field_count; i++) {
                     auto& value =
                             reflection->GetRepeatedMessage(&message, tag, i);
@@ -253,7 +255,7 @@ size_t ComputeEncodedFieldSize(
             break;
         case FieldType::kDouble: {
             // tag (1) + double size (8)
-            if (field_desc.IsRepeated()) {
+            if (is_repeated) {
                 size += (1 + 8) * field_count;
             } else {
                 double value = reflection->GetDouble(&message, tag);
@@ -265,7 +267,7 @@ size_t ComputeEncodedFieldSize(
         }
         case FieldType::kFloat: {
             // tag (1) + float size (4)
-            if (field_desc.IsRepeated()) {
+            if (is_repeated) {
                 size += (1 + 4) * field_count;
             } else {
                 float value = reflection->GetFloat(&message, tag);
@@ -277,7 +279,7 @@ size_t ComputeEncodedFieldSize(
         }
         case FieldType::kFixed32: {
             // tag (1) + int32 size (4)
-            if (field_desc.IsRepeated()) {
+            if (is_repeated) {
                 size += (1 + 4) * field_count;
             } else {
                 uint32_t value = reflection->GetFixed32(&message, tag);
@@ -289,7 +291,7 @@ size_t ComputeEncodedFieldSize(
         }
         case FieldType::kSfixed32: {
             // tag (1) + int32 size (4)
-            if (field_desc.IsRepeated()) {
+            if (is_repeated) {
                 size += (1 + 4) * field_count;
             } else {
                 int32_t value = reflection->GetSfixed32(&message, tag);
@@ -301,7 +303,7 @@ size_t ComputeEncodedFieldSize(
         }
         case FieldType::kFixed64: {
             // tag (1) + int64 size (8)
-            if (field_desc.IsRepeated()) {
+            if (is_repeated) {
                 size += (1 + 8) * field_count;
             } else {
                 int32_t value = reflection->GetFixed64(&message, tag);
@@ -313,7 +315,7 @@ size_t ComputeEncodedFieldSize(
         }
         case FieldType::kSfixed64: {
             // tag (1) + int32 size (8)
-            if (field_desc.IsRepeated()) {
+            if (is_repeated) {
                 size += (1 + 8) * field_count;
             } else {
                 int64_t value = reflection->GetSfixed64(&message, tag);
