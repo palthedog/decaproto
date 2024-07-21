@@ -160,6 +160,13 @@ public:                                                                        \
         return it->second(message, index);                                     \
     }                                                                          \
                                                                                \
+    cc_type* MutableRepeated##CcType(                                          \
+            Message* message, uint32_t tag, int index) const {                 \
+        auto it = get_repeated_##CcType##_impls_.find(tag);                    \
+        assert(it != get_repeated_##CcType##_impls_.end());                    \
+        return const_cast<cc_type*>(&it->second(message, index));              \
+    }                                                                          \
+                                                                               \
     cc_type* AddRepeated##CcType(Message* message, uint32_t tag) const {       \
         auto it = add_repeated_##CcType##_impls_.find(tag);                    \
         assert(it != add_repeated_##CcType##_impls_.end());                    \
@@ -200,6 +207,19 @@ public:                                                                        \
 
     DEFINE_FOR(std::string, String)
     DEFINE_FOR(Message, Message)
+
+    void SetString(
+            Message* message, uint32_t tag, const std::string& value) const {
+        *MutableString(message, tag) = value;
+    }
+
+    void SetRepeatedString(
+            Message* message,
+            uint32_t tag,
+            int index,
+            const std::string& value) const {
+        *MutableRepeatedString(message, tag, index) = value;
+    }
 
 #undef DEFINE_FOR
 
